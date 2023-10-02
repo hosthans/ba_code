@@ -1,0 +1,14 @@
+{
+    "ffhq": {
+        "torch": false,
+        "num_classes": 1000
+    },
+    "lfw": {
+        "torch": true,
+        "num_classes": "X"
+    }, 
+    "fmnist": {
+        "torch": true, 
+        "num_classes": 10
+    }
+}
