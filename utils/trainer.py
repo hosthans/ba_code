@@ -47,9 +47,9 @@ class Trainer:
         self.model = torch.nn.DataParallel(self.load_model(model_type)).to(utils.get_device())
         self.optimizer = self.load_optimizer()
         self.criterion = nn.CrossEntropyLoss().cuda()
-        self.train()
+        self.train(model_type)
 
-    def train(self):
+    def train(self, model_type):
         best_ACC = 0.0
 
         for epoch in range(self.model_config['epochs']):
@@ -88,6 +88,8 @@ class Trainer:
                 torch.save({'state_dict':self.model.state_dict()}, os.path.join(self.CKPT_PATH, "ckpt_epoch{}.tar").format(epoch))
 
             print("Epoch:{}\tTime:{:.2f}\tTrain Loss:{:.2f}\tTrain Acc:{:.2f}\tTest Acc{:.2f}".format(epoch, interval, train_loss, train_acc, test_acc))
+
+        torch.save({'state_dict':self.model.state_dict()}, os.path.join(self.MODEL_PATH, "full{}.tar").format(model_type))
 
     def test(self):
         self.model.eval()
