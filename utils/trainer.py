@@ -140,7 +140,7 @@ class Trainer:
     
     def train_gan(self):
         print("Training-Process started!")
-        set = 0
+        step = 0
 
         for epoch in range(self.model_config['epochs']):
             start = time.time()
