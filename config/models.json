@@ -1,11 +1,14 @@
 {
     "gan": {
-        "epochs": 1,
-        "lr": 1, 
-        "batch_size": 1,
+        "epochs": 25,
+        "lr": 0.0002, 
+        "batch_size": 64,
         "shuffle": true,
-        "momentum": 0.9,
-        "weight_decay": 1e-4
+        "momentum": 0.5,
+        "unlabel_weight": 10,
+        "n_critic": 5,
+        "z_dim": 100,
+        "img_size": 64 
     },
 
     "VGG16": {

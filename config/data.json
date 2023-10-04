@@ -1,13 +1,16 @@
 {
     "ffhq": {
+        "gray": false,
         "torch": false,
         "num_classes": 1000
     },
     "lfw": {
+        "gray": false,
         "torch": true,
         "num_classes": "X"
     }, 
     "fmnist": {
+        "gray": true,
         "torch": true, 
         "num_classes": 10
     }
