@@ -185,7 +185,7 @@ class Trainer:
             interval = end-start
 
             print(f"Epoch:{epoch} \t Time:{interval} \t Generator loss: {g_loss}")
-            if (epoch+1) %10 == 0:
+            if (epoch+1) % 3 == 0:
                 z = torch.randn(32, self.model_config['z_dim']).cuda()
                 fake_image = self.generator(z)
                 utils.save_tensor_image(fake_image.detach(), os.path.join(self.RESULT_PATH, f"result_image_{epoch}.png"), nrow=8)
