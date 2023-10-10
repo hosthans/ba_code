@@ -198,7 +198,8 @@ class Trainer:
             print("load dataset from directory")
             if dataset_config["torch"] == True:
                 # each dataset downloaded from torch existing in ./data
-                if dataset_config["gray"] == True:
+                if dataset_config["gray"]:
+                    print("load grayscale dataset \n\n")
                     return utils.download_torchvision(
                         dataset=dataset,
                         dataset_root=os.path.join(DATA_PATH, dataset),
@@ -214,6 +215,7 @@ class Trainer:
                         ),
                     )
                 else: 
+                    print("load colored dataset \n\n")
                     return utils.download_torchvision(
                         dataset=dataset,
                         dataset_root=os.path.join(DATA_PATH, dataset),
@@ -229,7 +231,8 @@ class Trainer:
                     )
             else:
                 # each dataset downloaded as directory/zip existing in ./data
-                if dataset_config['gray'] == True:
+                if dataset_config['gray']:
+                    print("load grayscale dataset \n\n")
                     return utils.load_ImageSet(
                         os.path.join(DATA_PATH, dataset),
                         transforms.Compose(
@@ -243,6 +246,7 @@ class Trainer:
                         ),
                     )
                 else:
+                    print("load colored dataset \n\n")
                     return utils.load_ImageSet(
                         os.path.join(DATA_PATH, dataset),
                         transforms.Compose(
