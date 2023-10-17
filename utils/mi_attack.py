@@ -33,7 +33,7 @@ def inversion(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_step=1, l
             score1 = float(torch.mean(torch.diag(torch.index_select(torch.log(F.softmax(state_output, dim=-1)).data, 1, y))))
             score2 = float(torch.mean(torch.diag(torch.index_select(torch.log(F.softmax(action_output, dim=-1)).data, 1, y))))
             score3 = math.log(max(1e-7, float(torch.index_select(F.softmax(state_output, dim=-1).data, 1, y)) - float(torch.max(torch.cat((F.softmax(state_output, dim=-1)[0,:y],F.softmax(state_output, dim=-1)[0,y+1:])), dim=-1)[0])))
-            reward = 2 * score1 + 2 * score2 + 8 * score3
+            reward = 2 * score1 + 2 * score2 + 4 * score3
 
             # Update policy.
             if t == max_step - 1 :
@@ -66,8 +66,10 @@ def inversion(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_step=1, l
             best_images = torch.vstack(test_images)
             os.makedirs("./result/images/{}".format(model_name), exist_ok=True)
             os.makedirs("./result/models/{}".format(model_name), exist_ok=True)
-            save_image(best_images, "./result/images/{}/{}_{}.png".format(model_name, label, alpha), nrow=10)
+            save_image(best_images, "./result/images/{}/{}.png".format(model_name, label), nrow=10)
             torch.save(agent.actor_local.state_dict(), "./result/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
         if i_episode % 10000 == 0 or i_episode == max_episodes:
             print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes,best_score))
+            save_image(best_images, "./result/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
+
     return best_images
