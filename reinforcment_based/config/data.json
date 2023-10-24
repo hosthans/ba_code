@@ -2,16 +2,32 @@
     "ffhq": {
         "gray": false,
         "torch": false,
-        "num_classes": 1000
+        "num_classes": 1000,
+        "local": false
     },
     "lfw": {
         "gray": false,
         "torch": true,
-        "num_classes": "X"
+        "num_classes": "X",
+        "local": false
     }, 
     "fmnist": {
         "gray": true,
         "torch": true, 
-        "num_classes": 10
+        "num_classes": 10,
+        "local": false
+    },
+    "mnist": {
+        "gray": true,
+        "torch": true,
+        "num_classes": 10,
+        "local": false
+    }, 
+    "MNIST_SPLIT": {
+        "mainDS": "mnist",
+        "gray": true,
+        "torch": true,
+        "num_classes": 10,
+        "local": true
     }
 }

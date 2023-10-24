@@ -20,7 +20,7 @@ class Trainer:
     Running trainig-loop for adjusting params of neural networks.
     """
 
-    def __init__(self, model_type: str = "VGG16", dataset: str = "ffhq", mode: str = "nn"):
+    def __init__(self, model_type: str = "VGG16", dataset: str = "ffhq", local:bool = False, mode: str = "nn"):
         """Initialize neceserray values
 
         Args:
@@ -46,12 +46,22 @@ class Trainer:
             print(e)
     
         self.data_config = utils.load_json(os.path.join(CONFIG_PATH, "data.json"))
-        self.dataset_config = self.data_config['fmnist']
-        
+        self.dataset_config = self.data_config[dataset]
+        self.mode = mode
+        print(self.dataset_config)
         if mode == "nn":
             # dataset
-            self.dataset = self.get_dataset(dataset)
-            self.trainloader, self.testloader = self.get_dataloader(self.dataset, 0.2)
+            if local:
+                self.dataset = self.get_dataset(self.dataset_config['mainDS'])
+                train_indices = torch.load(os.path.join(os.path.join(DATA_PATH, dataset), 'train_indices.pth'))
+                test_indices = torch.load(os.path.join(os.path.join(DATA_PATH, dataset), 'test_indices.pth'))
+
+                self.trainloader = data.DataLoader(self.dataset, batch_size=self.model_config["batch_size"], sampler=data.SubsetRandomSampler(train_indices))
+                self.testloader = data.DataLoader(self.dataset, batch_size=self.model_config["batch_size"], sampler=data.SubsetRandomSampler(test_indices))
+            
+            else:
+                self.dataset = self.get_dataset(dataset)
+                self.trainloader, self.testloader = self.get_dataloader(self.dataset, 0.2)
 
             # neural Network
             self.model = torch.nn.DataParallel(self.load_model(model_type)).to(utils.get_device())
@@ -61,7 +71,7 @@ class Trainer:
             self.criterion = nn.CrossEntropyLoss().cuda()
 
             # trigger training
-            self.train()
+            # self.train()
         elif mode == "gan":
             # dataset
             self.dataset = self.get_dataset(dataset)
@@ -77,11 +87,19 @@ class Trainer:
             self.optim_dis = torch.optim.Adam(self.discriminator.parameters(), lr=self.model_config['lr'], betas=(0.5, 0.999))
 
             # trigger training
-            self.train_gan()
+            # self.train_gan()
         else:
             assert False, "training method not implemented yet"
-        
+
     def train(self):
+        if self.mode == "nn":
+            self.train_nn()
+        elif self.mode == "gan":
+            self.train_gan()
+        else: 
+            print(f"train mode for {self.mode} not implemented yet")
+
+    def train_nn(self):
         print("Training-Process started!")
         best_ACC = 0.0
 

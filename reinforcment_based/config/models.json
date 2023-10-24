@@ -12,7 +12,7 @@
     },
 
     "VGG16": {
-        "epochs": 30,
+        "epochs": 10,
         "lr": 1e-3,
         "batch_size": 32,
         "shuffle": true,
