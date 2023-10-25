@@ -1,0 +1,2 @@
+path_G ./checkpoints/GAN/ffhq/VGG16/improved_ffhq_G.tar
+path_D ./checkpoints/GAN/ffhq/VGG16/improved_ffhq_D.tar
