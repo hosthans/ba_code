@@ -12,7 +12,7 @@
     },
 
     "VGG16": {
-        "epochs": 10,
+        "epochs": 30,
         "lr": 1e-3,
         "batch_size": 32,
         "shuffle": true,
@@ -22,7 +22,7 @@
 
     "FaceNet":{
         "epochs":30,
-        "batch_size":64,
+        "batch_size":32,
         "instance":4,
         "lr":1e-2,
         "momentum":0.9,

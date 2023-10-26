@@ -1,0 +1,24 @@
+{
+    "MNIST_SPLIT": {
+        "mainDS": "mnist",
+        "name": "mnist",
+        "gray": true,
+        "indices": true,
+        "train_file": "../datasets/MNIST_SPLIT/train_indices.pth",
+        "test_file": "../datasets/MNIST_SPLIT/test_indices.pth",
+        "gan_file": "../datasets/MNIST_SPLIT/gan_indices.pth",
+        "model_name": "VGG16",
+        "num_classes": 10
+    },
+    "celeba": {
+        "name": "celeba",
+        "indices": false,
+        "gray": false,
+        "train_file": "../datasets/meta_celeba/trainset.txt",
+        "test_file": "../datasets/meta_celeba/testset.txt",
+        "gan_file": "../datasets/meta_celeba/ganset.txt",
+        "img_path": "../datasets/celeba/img_align_celeba",
+        "model_name": "VGG16",
+        "num_classes": 1000
+    }
+}
