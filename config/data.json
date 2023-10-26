@@ -1,0 +1,18 @@
+{
+    "MNIST_SPLIT": {
+        "mainDS": "mnist",
+        "gray": true,
+        "torch": true,
+        "num_classes": 10,
+        "local": true
+    },
+    "celeba": {
+        "name": "celeba",
+        "train_file": "../datasets/meta_celeba/trainset.txt",
+        "test_file": "../datasets/meta_celeba/testset.txt",
+        "gan_file": "../datasets/meta_celeba/ganset.txt",
+        "data_dir": "/home/bot/coding/bachelorarbeit/ba_code/datasets/celeba/img_align_celeba",
+        "model_name": "FaceNet",
+        "num_classes": 1000
+    }
+}
