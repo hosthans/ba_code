@@ -232,6 +232,7 @@ def get_attack_model(args_json, eval_mode=False):
     n_classes=args_json['dataset']['n_classes']
     
     model_types_ = args_json['train']['model_types'].split(',')
+    print(model_types_)
     checkpoints = args_json['train']['cls_ckpts'].split(',')
 
     G, D = get_GAN(args_json['dataset']['name'],gan_type=args_json['attack']['improved_flag'], 
@@ -243,6 +244,8 @@ def get_attack_model(args_json, eval_mode=False):
     # target and student classifiers
     for i in range(len(cid)):
         id_ = int(cid[i])
+        print(id_)
+        print(model_types_[id_])
         model_types_[id_] = model_types_[id_].strip()
         checkpoints[id_] = checkpoints[id_].strip()
         print('Load classifier {} at {}'.format(model_types_[id_], checkpoints[id_]))

@@ -18,6 +18,7 @@
         "test_file": "../datasets/meta_celeba/testset.txt",
         "gan_file": "../datasets/meta_celeba/ganset.txt",
         "img_path": "../datasets/celeba/img_align_celeba",
+        "img_gan_path": "../datasets/celeba/img_align_celeba",
         "model_name": "VGG16",
         "num_classes": 1000
     }

@@ -35,7 +35,10 @@ class Trainer:
         self.dataset_config = self.data_config[dataset]
 
         # load model_type for specified dataset
-        model_type = self.dataset_config['model_name']
+        if mode == "gan":
+            model_type = "gan"
+        else:
+            model_type = self.dataset_config['model_name']
 
         self.MODEL_PATH = os.path.join(MODEL_DATA_PATH, model_type)
         self.CKPT_PATH = os.path.join(self.MODEL_PATH, "ckpts")
@@ -52,9 +55,9 @@ class Trainer:
             self.model_config = self.models_config[model_type]
         except NotImplementedError as e:
             print(e)
-    
-        
+
         self.mode = mode
+        
         print(self.dataset_config)
         if mode == "nn":
             # dataset
@@ -87,7 +90,11 @@ class Trainer:
             # self.train()
         elif mode == "gan":
             # load dataset
-            
+            print("----------------Loading datasets-----------------")
+            self.train_set = dl.ImageFolder(config=self.dataset_config, file_path=self.dataset_config['gan_file'], mode="gan")
+            self.trainloader = dl.init_dataloader(self.model_config, self.train_set)
+
+            del self.train_set
 
             # Generator variables
             self.generator, self.discriminator = self.load_model(model_type=model_type)
@@ -177,7 +184,7 @@ class Trainer:
 
         for epoch in range(self.model_config['epochs']):
             start = time.time()
-            for i, (imgs, lbl) in enumerate(self.trainloader):
+            for i, imgs in enumerate(self.trainloader):
                 step += 1
                 imgs = imgs.cuda()
                 bs = imgs.size(0)
