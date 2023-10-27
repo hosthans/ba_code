@@ -10,6 +10,8 @@ from model.gan import *
 from model.facenet import *
 import random
 from copy import deepcopy
+from opacus import PrivacyEngine
+import numpy as np
 
 CONFIG_PATH = "./config"
 DATA_PATH = "./data"
@@ -108,7 +110,35 @@ class Trainer:
             # trigger training
             # self.train_gan()
         elif mode == "dpnn":
-            pass
+            # dataset
+            print("----------------Loading datasets-----------------")
+            self.train_set = dl.ImageFolder(config=self.dataset_config, file_path=self.dataset_config['train_file'], mode="train")
+            self.test_set = dl.ImageFolder(config=self.dataset_config, file_path=self.dataset_config['test_file'], mode="test")
+
+            print("---------------Loading dataloader----------------")
+            self.trainloader = dl.init_dataloader(self.model_config, self.train_set)
+            self.testloader = dl.init_dataloader(self.model_config, self.test_set)
+
+            del self.train_set
+            del self.test_set
+
+            # neural Network
+            self.model = torch.nn.DataParallel(self.load_model(model_type)).to(utils.get_device())
+
+            # Optimizer
+            self.optimizer = self.load_optimizer()
+            self.criterion = nn.CrossEntropyLoss().cuda()
+
+            self.privacy_engine = PrivacyEngine(secure_mode=False)
+
+            self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+                module=self.model,
+                optimizer=self.optimizer,
+                data_loader=self.trainloader,
+                noise_multiplier=1.0,
+                max_grad_norm=1.0
+            )
+
         else:
             assert False, "training method not implemented yet"
 
@@ -117,8 +147,35 @@ class Trainer:
             self.train_nn()
         elif self.mode == "gan":
             self.train_gan()
+        elif self.mode == "dpnn":
+            self.train_dp()
         else: 
             print(f"train mode for {self.mode} not implemented yet")
+
+    def train_dp(self):
+        print("Training-Process started!")
+        best_ACC = 0.0
+
+        for epoch in range (self.model_config['epochs']):
+            tf = time.time()
+            self.model.train()
+            losses = []
+            for _batch_idx, (data, target) in enumerate(self.trainloader):
+                data, target = data.to(utils.get_device()), target.to(utils.get_device())
+                self.optimizer.zero_grad()
+                output = self.model(data)
+                loss = self.criterion(output, target)
+                loss.backward()
+                self.optimizer.step()
+                losses.append(loss.item())
+
+            epsilon = self.privacy_engine.accountant.get_epsilon(delta=1e-5)
+            print(
+                f"Train Epoch: {epoch} \t"
+                f"Loss: {np.mean(losses):.6f} "
+                f"(ε = {epsilon:.2f}, δ = {1e-5})"
+            )
+        torch.save({'state_dict':self.model.state_dict()}, os.path.join(self.MODEL_PATH, "dp_{}.tar").format(self.dataset_config['model_name']))
 
     def train_nn(self):
         print("Training-Process started!")
@@ -357,6 +414,7 @@ class Trainer:
     
     def load_model(self, model_type: str):
         if model_type == 'VGG16':
+            # return VGG16WithoutBatchNorm(num_classes=self.dataset_config['num_classes'])
             return VGG16(n_classes=self.dataset_config['num_classes'])
         elif model_type == 'gan':
             return Generator(self.model_config['z_dim']), DGWGAN(3)
