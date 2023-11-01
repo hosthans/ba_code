@@ -11,6 +11,7 @@ from model.facenet import *
 import random
 from copy import deepcopy
 from opacus import PrivacyEngine
+from opacus.validators import ModuleValidator
 import numpy as np
 
 CONFIG_PATH = "./config"
@@ -125,20 +126,11 @@ class Trainer:
             # neural Network
             self.model = torch.nn.DataParallel(self.load_model(model_type)).to(utils.get_device())
 
+
             # Optimizer
             self.optimizer = self.load_optimizer()
             self.criterion = nn.CrossEntropyLoss().cuda()
-
-            self.privacy_engine = PrivacyEngine(secure_mode=False)
-
-            self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
-                module=self.model,
-                optimizer=self.optimizer,
-                data_loader=self.trainloader,
-                noise_multiplier=1.0,
-                max_grad_norm=1.0
-            )
-
+            
         else:
             assert False, "training method not implemented yet"
 
@@ -154,6 +146,17 @@ class Trainer:
 
     def train_dp(self):
         print("Training-Process started!")
+
+        self.privacy_engine = PrivacyEngine(secure_mode=False)
+
+        self.model, self.optimizer, self.trainloader = self.privacy_engine.make_private(
+            module=self.model,
+            optimizer=self.optimizer,
+            data_loader=self.trainloader,
+            noise_multiplier=1.0,
+            max_grad_norm=1.0
+        )
+        
         best_ACC = 0.0
 
         for epoch in range (self.model_config['epochs']):
@@ -163,17 +166,20 @@ class Trainer:
             for _batch_idx, (data, target) in enumerate(self.trainloader):
                 data, target = data.to(utils.get_device()), target.to(utils.get_device())
                 self.optimizer.zero_grad()
-                output = self.model(data)
+                feat, output = self.model(data)
                 loss = self.criterion(output, target)
                 loss.backward()
                 self.optimizer.step()
                 losses.append(loss.item())
+
+            test_acc = self.test()
 
             epsilon = self.privacy_engine.accountant.get_epsilon(delta=1e-5)
             print(
                 f"Train Epoch: {epoch} \t"
                 f"Loss: {np.mean(losses):.6f} "
                 f"(ε = {epsilon:.2f}, δ = {1e-5})"
+                f"test acc: {test_acc}"
             )
         torch.save({'state_dict':self.model.state_dict()}, os.path.join(self.MODEL_PATH, "dp_{}.tar").format(self.dataset_config['model_name']))
 
@@ -288,6 +294,15 @@ class Trainer:
                 utils.save_tensor_image(fake_image.detach(), os.path.join(self.RESULT_PATH, f"result_image_{epoch}.png"), nrow=8)
 
             torch.save({'state_dict': self.generator.state_dict()}, os.path.join(self.MODEL_PATH, "Generator.tar"))
+
+    def validate_module(self):
+        errors = ModuleValidator.validate(self.model, strict=False)
+        print(errors)
+
+    def correct_module(self):
+        self.model = ModuleValidator.fix(self.model)
+        self.validate_module()
+        self.optimizer = self.load_optimizer()
 
     def get_dataset(self, dataset: str, image_size: int = 64):
         dataset_config = self.data_config[dataset]
