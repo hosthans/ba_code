@@ -1,15 +1,13 @@
 {
-    "MNIST_SPLIT": {
-        "mainDS": "mnist",
+    "mnist": {
         "name": "mnist",
-        "gray": true,
-        "indices": true,
-        "train_file": "../datasets/MNIST_SPLIT/train_indices.pth",
-        "test_file": "../datasets/MNIST_SPLIT/test_indices.pth",
-        "gan_file": "../datasets/MNIST_SPLIT/gan_indices.pth",
         "model_name": "VGG16",
-        "num_classes": 10
-    },
+        "gray": true,
+        "torch": true,
+        "num_classes": 10,
+        "local": false
+    }, 
+
     "celeba": {
         "name": "celeba",
         "indices": false,
