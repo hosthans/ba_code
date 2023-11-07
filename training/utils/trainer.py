@@ -148,17 +148,20 @@ class Trainer:
                 download=True,
                 transform=transforms.Compose(
                     [
-                        transforms.Grayscale(num_output_channels=3),
-                        transforms.ToTensor(),
+                        # transforms.Grayscale(num_output_channels=3),
                         transforms.Resize((64, 64)),
-                        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                        transforms.ToTensor(),
+                        # transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                        transforms.Normalize(mean=[0.5], std=[0.5])
                     ]
                 ),
             )
 
-            self.trainloader = dl.init_dataloader(self.model_config, self.train_set)
+            self.trainloader = data.DataLoader(self.train_set, batch_size=self.model_config["batch_size"], shuffle=True)
 
-            del self.train_set
+            # self.trainloader = dl.init_dataloader(self.model_config, self.train_set)
+
+            # del self.train_set
 
             # Generator variables
             self.generator, self.discriminator = self.load_model(model_type=model_type)
@@ -426,13 +429,17 @@ class Trainer:
             interval = end - start
 
             print(f"Epoch:{epoch} \t Time:{interval} \t Generator loss: {g_loss}")
-            if (epoch + 1) % 3 == 0:
+            if (epoch + 1) % 10 == 0:
                 z = torch.randn(32, self.model_config["z_dim"]).cuda()
                 fake_image = self.generator(z)
                 utils.save_tensor_image(
                     fake_image.detach(),
                     os.path.join(self.RESULT_PATH, f"result_image_{epoch}.png"),
                     nrow=8,
+                )
+                torch.save(
+                    {"state_dict": self.generator.state_dict()},
+                    os.path.join(self.MODEL_PATH, f"ckpts/Generator{epoch}.tar"),
                 )
 
             torch.save(
@@ -666,7 +673,8 @@ class Trainer:
             # return VGG16WithoutBatchNorm(num_classes=self.dataset_config['num_classes'])
             return VGG16(n_classes=self.dataset_config["num_classes"])
         elif model_type == "gan":
-            return Generator(self.model_config["z_dim"]), DGWGAN(3)
+            # return Generator(self.model_config["z_dim"]), DGWGAN(3)
+            return Generator_MNIST(self.model_config["z_dim"]), DGWGAN_MNIST(1)
         elif model_type == "FaceNet":
             return FaceNet(num_classes=self.dataset_config["num_classes"])
         return None
