@@ -167,9 +167,16 @@ def inversion_MNIST_I(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_s
             state_image = G(z).detach()
             state_image = F.interpolate(state_image, size=(64, 64), mode='bilinear', align_corners=False)
             # print(state_image.shape)
+            # print(state_image.shape)
             action_image = G(action.clone().detach().reshape((1, len(action))).cuda()).detach()
             action_image = F.interpolate(action_image, size=(64, 64), mode='bilinear', align_corners=False)
+            # print(action_image.shape)
             # Calculate the reward.
+            if state_image.shape != torch.Size([1,3,64,64]):
+                state_image = torch.cat([state_image]*3, dim=1)
+                # print(state_image.shape)
+                action_image = torch.cat([action_image]*3, dim=1)
+                # print(action_image.shape)
             _, state_output = T(state_image)
             _, action_output = T(action_image)
             score1 = float(torch.mean(torch.diag(torch.index_select(torch.log(F.softmax(state_output, dim=-1)).data, 1, y))))
@@ -198,6 +205,10 @@ def inversion_MNIST_I(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_s
                     z_test = alpha * z_test + (1 - alpha) * action_test.clone().detach().reshape((1, len(action_test))).cuda()
                 test_image = G(z_test).detach()
                 test_image = F.interpolate(test_image, size=(64, 64), mode='bilinear', align_corners=False)
+                # print(test_image.shape)
+                if test_image.shape != torch.Size([1,3,64,64]):
+                    test_image = torch.cat([test_image]*3, dim=1)
+                # print(test_image.shape)
                 test_images.append(test_image.cpu())
                 _, test_output = T(test_image)
                 test_score = float(torch.mean(torch.diag(torch.index_select(F.softmax(test_output, dim=-1).data, 1, y))))
