@@ -1,5 +1,6 @@
 {
     "gan": {
+        "name": "GAN",
         "epochs": 100,
         "lr": 2e-4, 
         "batch_size": 128,
@@ -12,6 +13,7 @@
     },
 
     "VGG16": {
+        "name": "VGG16",
         "epochs": 10,
         "lr": 1e-3,
         "batch_size": 32,
@@ -21,6 +23,7 @@
     },
 
     "FaceNet":{
+        "name": "FaceNet",
         "epochs":30,
         "batch_size":32,
         "instance":4,

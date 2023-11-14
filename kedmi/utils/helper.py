@@ -200,23 +200,47 @@ def count_parameters(model):
 
 def get_GAN(dataset, gan_type, gan_model_dir, n_classes, z_dim, target_model):
 
-    G = Generator(z_dim)
-    if gan_type == True:
-        D = MinibatchDiscriminator(n_classes=n_classes)
-    else:
-        D = DGWGAN(3)
+    if dataset == "mnist":
+        print("Load MNIST_GAN")
+        G = GeneratorMNIST(z_dim)
+        if gan_type == True:
+            D = MinibatchDiscriminator(n_classes=n_classes)
+        else:
+            D = DGWGAN(3)
 
-    if gan_type == True:
-        path = os.path.join(os.path.join(gan_model_dir, dataset), target_model)
-        path_G = os.path.join(path, "improved_{}_G.tar".format(dataset))
-        path_D = os.path.join(path, "improved_{}_D.tar".format(dataset))
-    else:
-        path = os.path.join(gan_model_dir, dataset)
-        path_G = os.path.join(path, "{}_G.tar".format(dataset))
-        path_D = os.path.join(path, "{}_D.tar".format(dataset)) 
+        if gan_type == True:
+            path = os.path.join(os.path.join(gan_model_dir, dataset), target_model)
+            # aktualisieren
+            path_G = os.path.join(path, "improved_{}_G.tar".format(dataset))
+            path_D = os.path.join(path, "improved_{}_D.tar".format(dataset))
+        else:
+            path = os.path.join(gan_model_dir, dataset)
+            # aktualisieren
+            path_G = os.path.join(path, "{}_G.tar".format(dataset))
+            path_D = os.path.join(path, "{}_D.tar".format(dataset)) 
 
-    print('path_G',path_G)
-    print('path_D',path_D)
+        print('path_G',path_G)
+        print('path_D',path_D)
+    else: 
+        G = Generator(z_dim)
+        if gan_type == True:
+            D = MinibatchDiscriminator(n_classes=n_classes)
+        else:
+            D = DGWGAN(3)
+
+        if gan_type == True:
+            path = os.path.join(os.path.join(gan_model_dir, dataset), target_model)
+            path_G = os.path.join(path, "improved_{}_G.tar".format(dataset))
+            path_D = os.path.join(path, "improved_{}_D.tar".format(dataset))
+        else:
+            path = os.path.join(gan_model_dir, dataset)
+            path_G = os.path.join(path, "{}_G.tar".format(dataset))
+            path_D = os.path.join(path, "{}_D.tar".format(dataset)) 
+
+        print('path_G',path_G)
+        print('path_D',path_D)
+
+    
 
     G = torch.nn.DataParallel(G).to(device)
     D = torch.nn.DataParallel(D).to(device)
