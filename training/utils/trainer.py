@@ -99,13 +99,13 @@ class Trainer:
             print("Draw Graph in Tensorboard")
             images, labels = next(iter(self.trainloader))
             grid = torchvision.utils.make_grid(images)
-            self.writer.add_image('images', grid, 0)
+            self.writer.add_image("images", grid, 0)
             self.writer.add_graph(self.model, images)
 
         elif mode == "gan":
             # load dataset
             print("----------------Loading datasets-----------------")
-            
+
             self.train_set = self.get_dataset(dataset=dataset, image_size=64, gan=True)
             print(self.train_set)
 
@@ -131,12 +131,13 @@ class Trainer:
                 lr=self.model_config["lr"],
                 betas=(0.5, 0.999),
             )
-            
 
         elif mode == "dpnn":
             # dataset
             print("----------------Loading datasets-----------------")
-            self.train_set, self.test_set = self.get_dataset(dataset=dataset, image_size=64, gan=False)
+            self.train_set, self.test_set = self.get_dataset(
+                dataset=dataset, image_size=64, gan=False
+            )
 
             print("---------------Loading dataloader----------------")
             self.trainloader = dl.init_dataloader(self.model_config, self.train_set)
@@ -157,7 +158,7 @@ class Trainer:
             print("Draw Graph in Tensorboard")
             images, labels = next(iter(self.trainloader))
             grid = torchvision.utils.make_grid(images)
-            self.writer.add_image('images', grid, 0)
+            self.writer.add_image("images", grid, 0)
             self.writer.add_graph(self.model, images)
 
         else:
@@ -224,9 +225,11 @@ class Trainer:
                     f"test acc: {test_acc}"
                 )
 
-                self.writer.add_scalar('train/lr', self.model_config['lr'], global_step=epoch)
-                self.writer.add_scalar('train/loss', np.mean(losses), global_step=epoch)
-                self.writer.add_scalar('test/confidence', test_acc, global_step=epoch)
+                self.writer.add_scalar(
+                    "train/lr", self.model_config["lr"], global_step=epoch
+                )
+                self.writer.add_scalar("train/loss", np.mean(losses), global_step=epoch)
+                self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
         torch.save(
             {"state_dict": self.model.state_dict()},
             os.path.join(self.MODEL_PATH, "dp_{}.tar").format(
@@ -264,16 +267,17 @@ class Trainer:
                 cnt += bs
 
                 # global_step = epoch * len(self.trainloader) * self.model_config['batch_size'] + i
-                
 
             train_loss, train_acc = loss_tot * 1.0 / cnt, ACC * 100.0 / cnt
-            self.writer.add_scalar('train/lr', self.model_config['lr'], global_step=epoch)
-            self.writer.add_scalar('train/loss', loss.item(), global_step=epoch)
-            self.writer.add_scalar('train/confidence', train_acc, global_step=epoch)
-            
+            self.writer.add_scalar(
+                "train/lr", self.model_config["lr"], global_step=epoch
+            )
+            self.writer.add_scalar("train/loss", loss.item(), global_step=epoch)
+            self.writer.add_scalar("train/confidence", train_acc, global_step=epoch)
+
             test_acc = self.test()
 
-            self.writer.add_scalar('test/confidence', test_acc, global_step=epoch)
+            self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
 
             interval = time.time() - tf
             if test_acc > best_ACC:
@@ -293,8 +297,8 @@ class Trainer:
             )
         torch.save(
             {"state_dict": self.model.state_dict()},
-            os.path.join(self.MODEL_PATH, "{}{}.tar").format(
-                self.dataset_config["model_name"], self.dataset_config['name']
+            os.path.join(self.MODEL_PATH, "nn_{}{}.tar").format(
+                self.dataset_config["model_name"], self.dataset_config["name"]
             ),
         )
 
@@ -363,7 +367,7 @@ class Trainer:
             interval = end - start
 
             print(f"Epoch:{epoch} \t Time:{interval} \t Generator loss: {g_loss}")
-            if (epoch + 1) % 10 == 0:
+            if (epoch + 1) % 5 == 0:
                 z = torch.randn(32, self.model_config["z_dim"]).cuda()
                 fake_image = self.generator(z)
                 utils.save_tensor_image(
@@ -376,12 +380,29 @@ class Trainer:
                     os.path.join(self.MODEL_PATH, f"ckpts/Generator{epoch}.tar"),
                 )
 
+                grid = torchvision.utils.make_grid(fake_image.detach())
+                self.writer.add_image(f"images_epoch_{epoch}", grid, 0)
+
             torch.save(
                 {"state_dict": self.generator.state_dict()},
                 os.path.join(
-                    self.MODEL_PATH, f"Generator{self.dataset_config['name']}.tar"
+                    self.MODEL_PATH,
+                    f"ckpts/Generator{self.dataset_config['name']}_epoch{epoch}.tar",
                 ),
             )
+
+            self.writer.add_scalar(
+                "generator/train/lr", self.model_config["lr"], global_step=epoch
+            )
+            self.writer.add_scalar("generator/train/loss", g_loss, global_step=epoch)
+
+        torch.save(
+            {"state_dict": self.generator.state_dict()},
+            os.path.join(
+                self.MODEL_PATH,
+                f"Generator{self.dataset_config['name']}.tar",
+            ),
+        )
 
     def validate_module(self):
         errors = ModuleValidator.validate(self.model, strict=False)
@@ -423,17 +444,19 @@ class Trainer:
                 ),
             )
             return train_set, test_set
-        
+
         elif dataset == "mnist" and gan == True:
             train_set = datasets.MNIST(
                 root="../datasets/mnist",
-                train=True, 
+                train=True,
                 download=True,
-                transform=transforms.Compose([
-                    transforms.Resize((image_size, image_size)),
-                    transforms.ToTensor(),
-                    transforms.Normalize(mean=[0.5], std=[0.5])
-                ])
+                transform=transforms.Compose(
+                    [
+                        transforms.Resize((image_size, image_size)),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.5], std=[0.5]),
+                    ]
+                ),
             )
             return train_set
 
@@ -448,14 +471,14 @@ class Trainer:
                 file_path=self.dataset_config["test_file"],
                 mode="test",
             )
-            
+
             return train_set, test_set
-        
-        elif dataset == "celeba" and gan == True: 
+
+        elif dataset == "celeba" and gan == True:
             gan_set = dl.ImageFolder(
                 config=self.dataset_config,
                 file_path=self.dataset_config["gan_file"],
-                mode="gan"
+                mode="gan",
             )
 
             return gan_set
