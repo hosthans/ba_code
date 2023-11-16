@@ -1,14 +1,14 @@
 import torch
 import torch.utils.data as data
 import os
-import utils.helper as utils
-import utils.dataloader as dl
+import training.utils.helper as utils
+import training.utils.dataloader as dl
 from torchvision import transforms
 from torchvision import datasets
 import time
-from model.classifier import *
-from model.gan import *
-from model.facenet import *
+from training.model.classifier import *
+from training.model.gan import *
+from training.model.facenet import *
 import random
 from copy import deepcopy
 from opacus import PrivacyEngine
@@ -17,10 +17,10 @@ from opacus.utils.batch_memory_manager import BatchMemoryManager
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
 
-CONFIG_PATH = "../config/training"
-DATA_PATH = "../datasets"
-MODEL_DATA_PATH = "../checkpoints"
-RESULT_PATH_GAN = "../attack_results"
+CONFIG_PATH = "config/training"
+DATA_PATH = "datasets"
+MODEL_DATA_PATH = "checkpoints"
+RESULT_PATH_GAN = "attack_results"
 
 MAX_GRAD_NORM = 1.2
 EPSILON = 50.0
@@ -41,7 +41,7 @@ class Trainer:
             mode (str, optional): Insert the training mode (gan or nn) for special training purposes
         """
         # initialize summary_writer for tensorboard
-        self.writer = SummaryWriter(f"../torchlogs/{mode}_{dataset}")
+        self.writer = SummaryWriter(f"torchlogs/{mode}_{dataset}")
 
         # load dataset configuration
         self.data_config = utils.load_json(os.path.join(CONFIG_PATH, "data.json"))
@@ -377,19 +377,13 @@ class Trainer:
                 )
                 torch.save(
                     {"state_dict": self.generator.state_dict()},
-                    os.path.join(self.MODEL_PATH, f"ckpts/Generator{epoch}.tar"),
+                    os.path.join(
+                        self.MODEL_PATH,
+                        f"ckpts/Generator{self.dataset_config['name']}_epoch{epoch}.tar",
+                    ),
                 )
-
                 grid = torchvision.utils.make_grid(fake_image.detach())
                 self.writer.add_image(f"images_epoch_{epoch}", grid, 0)
-
-            torch.save(
-                {"state_dict": self.generator.state_dict()},
-                os.path.join(
-                    self.MODEL_PATH,
-                    f"ckpts/Generator{self.dataset_config['name']}_epoch{epoch}.tar",
-                ),
-            )
 
             self.writer.add_scalar(
                 "generator/train/lr", self.model_config["lr"], global_step=epoch
@@ -417,7 +411,7 @@ class Trainer:
         dataset_config = self.data_config[dataset]
         if dataset == "mnist" and gan == False:
             train_set = datasets.MNIST(
-                root="../datasets/mnist",
+                root="datasets/mnist",
                 train=True,
                 download=True,
                 transform=transforms.Compose(
@@ -431,7 +425,7 @@ class Trainer:
             )
 
             test_set = datasets.MNIST(
-                root="../datasets/mnist",
+                root="datasets/mnist",
                 train=False,
                 download=True,
                 transform=transforms.Compose(
@@ -447,7 +441,7 @@ class Trainer:
 
         elif dataset == "mnist" and gan == True:
             train_set = datasets.MNIST(
-                root="../datasets/mnist",
+                root="datasets/mnist",
                 train=True,
                 download=True,
                 transform=transforms.Compose(
