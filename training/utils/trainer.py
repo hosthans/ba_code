@@ -16,11 +16,13 @@ from opacus.validators import ModuleValidator
 from opacus.utils.batch_memory_manager import BatchMemoryManager
 import numpy as np
 from torch.utils.tensorboard.writer import SummaryWriter
+from evaluation.evaluator import Plot
 
 CONFIG_PATH = "config/training"
 DATA_PATH = "datasets"
 MODEL_DATA_PATH = "checkpoints"
 RESULT_PATH_GAN = "attack_results"
+GRAPH_PATH = "graphs"
 
 MAX_GRAD_NORM = 1.2
 EPSILON = 50.0
@@ -43,6 +45,9 @@ class Trainer:
         # initialize summary_writer for tensorboard
         self.writer = SummaryWriter(f"torchlogs/{mode}_{dataset}")
 
+        # initialize plotter for plots
+        self.plotter = Plot()
+
         # load dataset configuration
         self.data_config = utils.load_json(os.path.join(CONFIG_PATH, "data.json"))
         self.dataset_config = self.data_config[dataset]
@@ -56,11 +61,13 @@ class Trainer:
         self.MODEL_PATH = os.path.join(MODEL_DATA_PATH, model_type)
         self.CKPT_PATH = os.path.join(self.MODEL_PATH, "ckpts")
         self.RESULT_PATH = os.path.join(self.MODEL_PATH, "results")
+        self.GRAPH_PATH = os.path.join(GRAPH_PATH, mode)
 
         os.makedirs(DATA_PATH, exist_ok=True)
         os.makedirs(self.MODEL_PATH, exist_ok=True)
         os.makedirs(self.CKPT_PATH, exist_ok=True)
         os.makedirs(self.RESULT_PATH, exist_ok=True)
+        os.makedirs(self.GRAPH_PATH, exist_ok=True)
 
         self.models_config = utils.load_json(os.path.join(CONFIG_PATH, "models.json"))
         # config of actual model
@@ -166,11 +173,13 @@ class Trainer:
 
     def train(self):
         if self.mode == "nn":
-            self.train_nn()
+            loss, acc, acc_t = self.train_nn()
+            return loss, acc, acc_t
         elif self.mode == "gan":
             self.train_gan()
         elif self.mode == "dpnn":
-            self.train_dp()
+            loss, acc, acc_t, eps = self.train_dp()
+            return loss, acc, acc_t, eps
         else:
             print(f"train mode for {self.mode} not implemented yet")
 
@@ -195,52 +204,94 @@ class Trainer:
 
         best_ACC = 0.0
 
+        train_acc_list = []
+        train_loss_list = []
+        test_acc_list = []
+        epsilon_list = []
+        epochs = np.arange(1, self.model_config["epochs"]+1)
+
         for epoch in range(self.model_config["epochs"]):
             tf = time.time()
+            ACC, cnt, loss_tot = 0, 0, 0.0
             self.model.train()
-            losses = []
             with BatchMemoryManager(
                 data_loader=self.trainloader,
-                max_physical_batch_size=128,
+                max_physical_batch_size=32,
                 optimizer=self.optimizer,
             ) as memory_safe_data_loader:
-                for _batch_idx, (data, target) in enumerate(memory_safe_data_loader):
-                    data, target = data.to(utils.get_device()), target.to(
+                for _batch_idx, (img, iden) in enumerate(memory_safe_data_loader):
+                    img, iden = img.to(utils.get_device()), iden.to(
                         utils.get_device()
                     )
+                    bs = img.size(0)
+                    iden = iden.view(-1)
+
+                    feats, out_prob = self.model(img)
+                    cross_loss = self.criterion(out_prob, iden)
+                    loss = cross_loss
+
                     self.optimizer.zero_grad()
-                    feat, output = self.model(data)
-                    loss = self.criterion(output, target)
                     loss.backward()
                     self.optimizer.step()
-                    losses.append(loss.item())
 
+                    out_iden = torch.argmax(out_prob, dim=1).view(-1)
+                    ACC += torch.sum(iden == out_iden).item()
+                    loss_tot += loss.item()*bs
+                    cnt += bs
+                    
+                train_loss, train_acc = loss_tot * 1.0 / cnt, ACC * 100.0 / cnt
                 test_acc = self.test()
 
                 epsilon = self.privacy_engine.accountant.get_epsilon(delta=1e-5)
-                print(
-                    f"Train Epoch: {epoch} \t"
-                    f"Loss: {np.mean(losses):.6f} "
-                    f"(ε = {epsilon:.2f}, δ = {1e-5})"
-                    f"test acc: {test_acc}"
+
+                train_acc_list.append(train_acc)
+                train_loss_list.append(train_loss)
+                test_acc_list.append(test_acc)
+                epsilon_list.append(epsilon)
+
+                # self.writer.add_scalar(
+                #     "train/lr", self.model_config["lr"], global_step=epoch
+                # )
+                #self.writer.add_scalar("train/loss", np.mean(losses), global_step=epoch)
+                # self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
+            
+            if test_acc > best_ACC:
+                best_ACC = test_acc
+
+            if (epoch + 1) % 10 == 0:
+                torch.save(
+                    {"state_dict": self.model.state_dict()},
+                    os.path.join(self.CKPT_PATH, "dp_ckpt_epoch{}.tar").format(epoch),
                 )
 
-                self.writer.add_scalar(
-                    "train/lr", self.model_config["lr"], global_step=epoch
+            interval = time.time() - tf
+            print(
+                "Epoch:{}\tTime:{:.2f}\tTrain Loss:{:.2f}\tTrain Acc:{:.2f}\tTest Acc{:.2f}".format(
+                    epoch, interval, train_loss, train_acc, test_acc
                 )
-                self.writer.add_scalar("train/loss", np.mean(losses), global_step=epoch)
-                self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
+            )
+        
+        train_loss_summary = ["VGG16-DP - loss", epochs, train_loss_list]
+        train_acc_summary = ["VGG16-DP - accuracy", epochs, train_acc_list]
+        test_acc_summary = ["VGG16-DP - accuracy (test)", epochs, test_acc_list]
+        epsilon_summary = ["DP-Epsilons", epochs, epsilon_list]
+
         torch.save(
             {"state_dict": self.model.state_dict()},
-            os.path.join(self.MODEL_PATH, "dp_{}.tar").format(
-                self.dataset_config["model_name"]
+            os.path.join(self.MODEL_PATH, "dp_{}{}.tar").format(
+                self.dataset_config["model_name"], self.dataset_config["name"]
             ),
         )
+
+        return train_loss_summary, train_acc_summary, test_acc_summary, epsilon_summary
 
     def train_nn(self):
         print("Training-Process started!")
         best_ACC = 0.0
-        running_loss = 0.0
+        train_acc_list = []
+        train_loss_list = []
+        test_acc_list = []
+        epochs = np.arange(1, self.model_config["epochs"]+1)
 
         for epoch in range(self.model_config["epochs"]):
             tf = time.time()
@@ -269,20 +320,24 @@ class Trainer:
                 # global_step = epoch * len(self.trainloader) * self.model_config['batch_size'] + i
 
             train_loss, train_acc = loss_tot * 1.0 / cnt, ACC * 100.0 / cnt
-            self.writer.add_scalar(
-                "train/lr", self.model_config["lr"], global_step=epoch
-            )
-            self.writer.add_scalar("train/loss", loss.item(), global_step=epoch)
-            self.writer.add_scalar("train/confidence", train_acc, global_step=epoch)
+
+            train_acc_list.append(train_acc)
+            train_loss_list.append(train_loss)
+
+            # self.writer.add_scalar(
+            #     "train/lr", self.model_config["lr"], global_step=epoch
+            # )
+            # self.writer.add_scalar("train/loss", loss.item(), global_step=epoch)
+            # self.writer.add_scalar("train/confidence", train_acc, global_step=epoch)
 
             test_acc = self.test()
+            test_acc_list.append(test_acc)
 
-            self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
+            # self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
 
             interval = time.time() - tf
             if test_acc > best_ACC:
                 best_ACC = test_acc
-                best_model = deepcopy(self.model)
 
             if (epoch + 1) % 10 == 0:
                 torch.save(
@@ -295,12 +350,19 @@ class Trainer:
                     epoch, interval, train_loss, train_acc, test_acc
                 )
             )
+        
+        train_loss_summary = ["VGG16 - loss", epochs, train_loss_list]
+        train_acc_summary = ["VGG16 - accuracy", epochs, train_acc_list]
+        test_acc_summary = ["VGG16 - accuracy (test)", epochs, test_acc_list]
+
         torch.save(
             {"state_dict": self.model.state_dict()},
             os.path.join(self.MODEL_PATH, "nn_{}{}.tar").format(
                 self.dataset_config["model_name"], self.dataset_config["name"]
             ),
         )
+
+        return train_loss_summary, train_acc_summary, test_acc_summary
 
     def test(self):
         self.model.eval()
