@@ -1,26 +1,26 @@
 {
-    "root_path": "../attack_results/",
+    "root_path": "attack_results/",
     "dataset":{
         "model_name": "VGG16",
-        "test_file_path": "../datasets/meta/testset.txt",
-        "gan_file_path": "../datasets/meta/ganset.txt",
+        "test_file_path": "datasets/meta_celeba/testset.txt",
+        "gan_file_path": "datasets/meta_celeba/ganset.txt",
         "name": "celeba",
-        "img_path": "../datasets/celeba/img_align_celeba",
-        "img_gan_path": "../datasets/celeba/img_align_celeba",
+        "img_path": "datasets/celeba/img_align_celeba",
+        "img_gan_path": "datasets/celeba/img_align_celeba",
         "n_classes":1000,
-        "fid_real_path": "../datasets/meta/celeba_target_300ids.npy",
-        "KNN_real_path": "../datasets/meta/fea_target_300ids.npy",
-        "p_reg_path": "../checkpoints/p_reg"
+        "fid_real_path": "datasets/meta_celeba/celeba_target_300ids.npy",
+        "KNN_real_path": "datasets/meta_celeba/fea_target_300ids.npy",
+        "p_reg_path": "checkpoints/p_reg"
     },
 
     "train":{
         "model_types": "VGG16,VGG16",
-        "cls_ckpts": "../checkpoints/target_model/target_ckp/VGG16.tar,../checkpoints/target_model/target_ckp/VGG16.tar",      
+        "cls_ckpts": "checkpoints/kedmi/target_ckp/VGG16.tar,checkpoints/kedmi/target_ckp/VGG16.tar",      
         "num_seeds": 5,
         "Nclass": 300,
-        "gan_model_dir": "../checkpoints/GAN",
+        "gan_model_dir": "checkpoints/kedmi/GAN",
         "eval_model": "FaceNet",
-        "eval_dir": "../checkpoints/target_model/target_ckp/FaceNet_95.88.tar"
+        "eval_dir": "checkpoints/kedmi/target_ckp/FaceNet_95.88.tar"
         },
 
     "attack":{

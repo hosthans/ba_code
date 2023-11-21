@@ -1,18 +1,20 @@
 import torch.nn.init as init
-import os, models.facenet as facenet, sys
+import torch.utils.data as data
+import os, kedmi.models.facenet as facenet, sys
 import json, time, random, torch
-from models import classify
-from models.classify import *
-from models.discri import *
-from models.generator import *
+from kedmi.models import classify
+from kedmi.models.classify import *
+from kedmi.models.discri import *
+from kedmi.models.generator import *
 import numpy as np
 import torch.nn as nn
 import torch.nn.functional as F
 import torchvision.utils as tvls
 from torchvision import transforms
 from datetime import datetime
-import utils.dataloader as dataloader
+import kedmi.utils.dataloader as dataloader
 from torch.autograd import grad
+from torchvision import datasets
 
 device = "cuda"
 
@@ -93,6 +95,25 @@ def get_deprocessor():
     proc.append(transforms.ToTensor())
     return transforms.Compose(proc)
 
+def get_deprocessor_mnist():
+    # resize 64, 64
+    proc = []
+    proc.append(transforms.Resize((64,64)))
+    proc.append(transforms.ToTensor())
+    return transforms.Compose(proc)
+
+def low2highMNIST(img):
+    bs = img.size(0)
+    proc = get_deprocessor_mnist()
+    img_tensor = img.detach().cpu().float()
+    img = torch.zeros(bs, 3, 64, 64)
+    for i in range(bs):
+        img_i = transforms.ToPILImage()(img_tensor[i, :, :, :]).convert('RGB')
+        img_i = proc(img_i)
+        img[i, :, :, :] = img_i[:, :, :]
+    img = img.cuda()
+    return img
+
 def low2high(img):
     # 0 and 1, 64 to 112
     bs = img.size(0)
@@ -106,7 +127,6 @@ def low2high(img):
     
     img = img.cuda()
     return img
-
 
 def get_model(attack_name, classes):
     if attack_name.startswith("VGG16"):
@@ -190,6 +210,7 @@ def gradient_penalty(x, y, DG):
     return gp
 
 def log_sum_exp(x, axis = 1):
+    print(x.shape)
     m = torch.max(x, dim = 1)[0]
     return m + torch.log(torch.sum(torch.exp(x - m.unsqueeze(1)), dim = axis))
 
@@ -202,22 +223,11 @@ def get_GAN(dataset, gan_type, gan_model_dir, n_classes, z_dim, target_model):
 
     if dataset == "mnist":
         print("Load MNIST_GAN")
-        G = GeneratorMNIST(z_dim)
-        if gan_type == True:
-            D = MinibatchDiscriminator(n_classes=n_classes)
-        else:
-            D = DGWGAN(3)
+        G = Generator_MNIST(z_dim)
+        D = DGWGAN_MNIST(1)
 
-        if gan_type == True:
-            path = os.path.join(os.path.join(gan_model_dir, dataset), target_model)
-            # aktualisieren
-            path_G = os.path.join(path, "improved_{}_G.tar".format(dataset))
-            path_D = os.path.join(path, "improved_{}_D.tar".format(dataset))
-        else:
-            path = os.path.join(gan_model_dir, dataset)
-            # aktualisieren
-            path_G = os.path.join(path, "{}_G.tar".format(dataset))
-            path_D = os.path.join(path, "{}_D.tar".format(dataset)) 
+        path_G = os.path.join(gan_model_dir, "Generatormnist.tar")
+        path_D = os.path.join(gan_model_dir, "Discriminatormnist.tar")
 
         print('path_G',path_G)
         print('path_D',path_D)
@@ -245,9 +255,9 @@ def get_GAN(dataset, gan_type, gan_model_dir, n_classes, z_dim, target_model):
     G = torch.nn.DataParallel(G).to(device)
     D = torch.nn.DataParallel(D).to(device)
     ckp_G = torch.load(path_G)
-    G.load_state_dict(ckp_G['state_dict'], strict=True)
+    G.load_state_dict(ckp_G['state_dict'], strict=False)
     ckp_D = torch.load(path_D)
-    D.load_state_dict(ckp_D['state_dict'], strict=True)
+    D.load_state_dict(ckp_D['state_dict'], strict=False)
   
     return G, D
 
@@ -258,12 +268,13 @@ def get_attack_model(args_json, eval_mode=False):
     model_types_ = args_json['train']['model_types'].split(',')
     print(model_types_)
     checkpoints = args_json['train']['cls_ckpts'].split(',')
+    dataset = args_json['dataset']['name']
 
     G, D = get_GAN(args_json['dataset']['name'],gan_type=args_json['attack']['improved_flag'], 
                     gan_model_dir=args_json['train']['gan_model_dir'],
                     n_classes=n_classes,z_dim=100,target_model=model_types_[0])
 
-    dataset = args_json['dataset']['name']
+    
     cid = args_json['attack']['classid'].split(",")
     # target and student classifiers
     for i in range(len(cid)):
@@ -291,9 +302,34 @@ def get_attack_model(args_json, eval_mode=False):
                 p_reg = os.path.join(args_json["dataset"]["p_reg_path"], '{}_{}_{}_p_reg.pt'.format(dataset,model_types_[0],model_types_[id_])) #'./p_reg/{}_{}_{}_p_reg.pt'.format(dataset,model_types_[0],model_types_[id_])
             # print('p_reg',p_reg)
             if not os.path.exists(p_reg):
-                _, dataloader_gan = init_dataloader(args_json, args_json['dataset']['gan_file_path'], 50, mode="gan")
-                from kedmi_attack import get_act_reg
-                fea_mean_,fea_logvar_ = get_act_reg(dataloader_gan,model,device)
+                if dataset == "mnist": 
+                    train_set = datasets.MNIST(
+                        root="datasets/mnist",
+                        train=True,
+                        download=True,
+                        transform=transforms.Compose(
+                            [
+                                # transforms.Grayscale(num_output_channels=3),
+                                transforms.Resize((64, 64)),
+                                transforms.ToTensor(),
+                                transforms.Normalize(mean=[0.5], std=[0.5]),
+                                # transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                            ]
+                        ),
+                    )
+
+                    trainloader = data.DataLoader(
+                        train_set, batch_size=64, shuffle=False, drop_last=True, pin_memory=True
+                    )
+                    _, dataloader_gan = train_set, trainloader
+
+                else:
+                    _, dataloader_gan = init_dataloader(args_json, args_json['dataset']['gan_file_path'], 50, mode="gan")
+                from kedmi.utils.kedmi_attack import get_act_reg, get_act_reg_mnist
+                if dataset == "mnist":
+                    fea_mean_, fea_logvar_ = get_act_reg_mnist(dataloader_gan, model, device)
+                else:
+                    fea_mean_,fea_logvar_ = get_act_reg(dataloader_gan,model,device)
                 torch.save({'fea_mean':fea_mean_,'fea_logvar':fea_logvar_},p_reg)
             else:
                 fea_reg = torch.load(p_reg)

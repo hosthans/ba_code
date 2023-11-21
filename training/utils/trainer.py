@@ -460,6 +460,14 @@ class Trainer:
             ),
         )
 
+        torch.save(
+            {"state_dict": self.discriminator.state_dict()},
+            os.path.join(
+                self.MODEL_PATH,
+                f"Discriminator{self.dataset_config['name']}.tar",
+            ),
+        )
+
     def validate_module(self):
         errors = ModuleValidator.validate(self.model, strict=False)
         print(errors)

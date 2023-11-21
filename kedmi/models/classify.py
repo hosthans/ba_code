@@ -4,8 +4,8 @@ import torch.nn as nn
 import torchvision.models
 import torch.nn.functional as F
 # from torch.nn.modules.loss import _Loss
-import models.evolve as evolve 
-import utils
+import kedmi.models.evolve as evolve 
+import kedmi.utils
 
 class Flatten(nn.Module):
     def forward(self, input):

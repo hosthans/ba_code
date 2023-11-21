@@ -28,25 +28,29 @@ class GeneratorCXR(nn.Module):
         y = self.l2_5(y)
         return y
 
-class GeneratorMNIST(nn.Module):
+class Generator_MNIST(nn.Module):
     def __init__(self, in_dim=100, dim=64):
-        super(GeneratorMNIST, self).__init__()
-        def dconv_bn_relu(in_dim, out_dim):
+        super(Generator_MNIST, self).__init__()
+        def conv_bn_relu(in_dim, out_dim):
             return nn.Sequential(
-                nn.ConvTranspose2d(in_dim, out_dim, 5, 2,
-                                   padding=2, output_padding=1, bias=False),
+                nn.ConvTranspose2d(in_dim, out_dim, 5, 2, padding=2, output_padding=1, bias=False),
                 nn.BatchNorm2d(out_dim),
-                nn.ReLU())
-
+                nn.ReLU()
+            )
+        
         self.l1 = nn.Sequential(
-            nn.Linear(in_dim, dim * 4 * 4 * 4, bias=False),
-            nn.BatchNorm1d(dim * 4 * 4 * 4),
-            nn.ReLU())
+            nn.Linear(in_dim, dim * 8 * 4 * 4, bias=False),
+            nn.BatchNorm1d(dim * 8 * 4 * 4),
+            nn.ReLU()
+        )
+
         self.l2_5 = nn.Sequential(
-            dconv_bn_relu(dim * 4, dim * 2),
-            dconv_bn_relu(dim * 2, dim),
-            nn.ConvTranspose2d(dim, 1, 5, 2, padding=2, output_padding=1),
-            nn.Sigmoid())
+            conv_bn_relu(dim * 8, dim * 4),
+            conv_bn_relu(dim * 4, dim * 2),
+            conv_bn_relu(dim * 2, dim),
+            nn.ConvTranspose2d(dim, 1, 5, 2, padding=2, output_padding=1),  # Änderung des Output-Kanals auf 1
+            nn.Tanh()  # Verwendung von Tanh-Aktivierungsfunktion anstelle von Sigmoid
+        )
 
     def forward(self, x):
         y = self.l1(x)
@@ -81,25 +85,29 @@ class Generator(nn.Module):
         y = self.l2_5(y)
         return y
 
-class GeneratorMNIST(nn.Module):
+class Generator_MNIST(nn.Module):
     def __init__(self, in_dim=100, dim=64):
-        super(GeneratorMNIST, self).__init__()
-        def dconv_bn_relu(in_dim, out_dim):
+        super(Generator_MNIST, self).__init__()
+        def conv_bn_relu(in_dim, out_dim):
             return nn.Sequential(
-                nn.ConvTranspose2d(in_dim, out_dim, 5, 2,
-                                   padding=2, output_padding=1, bias=False),
+                nn.ConvTranspose2d(in_dim, out_dim, 5, 2, padding=2, output_padding=1, bias=False),
                 nn.BatchNorm2d(out_dim),
-                nn.ReLU())
-
+                nn.ReLU()
+            )
+        
         self.l1 = nn.Sequential(
-            nn.Linear(in_dim, dim * 4 * 4 * 4, bias=False),
-            nn.BatchNorm1d(dim * 4 * 4 * 4),
-            nn.ReLU())
+            nn.Linear(in_dim, dim * 8 * 4 * 4, bias=False),
+            nn.BatchNorm1d(dim * 8 * 4 * 4),
+            nn.ReLU()
+        )
+
         self.l2_5 = nn.Sequential(
-            dconv_bn_relu(dim * 4, dim * 2),
-            dconv_bn_relu(dim * 2, dim),
-            nn.ConvTranspose2d(dim, 1, 5, 2, padding=2, output_padding=1),
-            nn.Sigmoid())
+            conv_bn_relu(dim * 8, dim * 4),
+            conv_bn_relu(dim * 4, dim * 2),
+            conv_bn_relu(dim * 2, dim),
+            nn.ConvTranspose2d(dim, 1, 5, 2, padding=2, output_padding=1),  # Änderung des Output-Kanals auf 1
+            nn.Tanh()  # Verwendung von Tanh-Aktivierungsfunktion anstelle von Sigmoid
+        )
 
     def forward(self, x):
         y = self.l1(x)
