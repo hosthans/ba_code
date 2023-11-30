@@ -122,10 +122,19 @@ class Trainer:
 
             del self.train_set
 
-            # Generator variables
-            self.generator, self.discriminator = self.load_model(model_type=model_type)
+            # # Generator variables
+            # self.generator, self.discriminator = self.load_model(model_type=model_type)
+            # self.generator = torch.nn.DataParallel(self.generator).cuda()
+            # self.discriminator = torch.nn.DataParallel(self.discriminator).cuda()
+            self.generator = Generator(self.model_config['z_dim'])
+            path_G = "checkpoints/gan/Generatorceleba.tar"
             self.generator = torch.nn.DataParallel(self.generator).cuda()
+            self.generator.load_state_dict(torch.load(path_G)['state_dict'], strict=False)
+
+            self.discriminator = DGWGAN(3)
+            path_D = "checkpoints/gan/Discriminatorceleba.tar"
             self.discriminator = torch.nn.DataParallel(self.discriminator).cuda()
+            self.discriminator.load_state_dict(torch.load(path_D)['state_dict'], strict=False)
 
             # Optimizer
             self.optim_gen = torch.optim.Adam(
@@ -176,7 +185,10 @@ class Trainer:
             loss, acc, acc_t = self.train_nn()
             return loss, acc, acc_t
         elif self.mode == "gan":
-            self.train_gan()
+            if self.dataset_config['name'] == "mnist":
+                self.train_gan_mnist()
+            else:
+                self.train_gan()
         elif self.mode == "dpnn":
             loss, acc, acc_t, eps = self.train_dp()
             return loss, acc, acc_t, eps
@@ -380,13 +392,101 @@ class Trainer:
 
         return ACC * 100.0 / cnt
 
-    def train_gan(self):
+    def train_gan_mnist(self):
         print("Training-Process started!")
         step = 0
 
         for epoch in range(self.model_config["epochs"]):
             start = time.time()
             for i, (imgs, label) in enumerate(self.trainloader):
+                step += 1
+                imgs = imgs.cuda()
+                bs = imgs.size(0)
+
+                utils.freeze(self.generator)
+                utils.unfreeze(self.discriminator)
+
+                z = torch.randn(bs, self.model_config["z_dim"]).cuda()
+                f_imgs = self.generator(z)
+
+                r_logit = self.discriminator(imgs)
+                f_logit = self.discriminator(f_imgs)
+
+                wd = r_logit.mean() - f_logit.mean()  # Wasserstein-1 Distance
+                gp = utils.gradient_penalty(
+                    imgs.data, f_imgs.data, DG=self.discriminator
+                )
+                dg_loss = -wd + gp * 10.0
+
+                self.optim_dis.zero_grad()
+                dg_loss.backward()
+                self.optim_dis.step()
+
+                # train Generator
+                if step % self.model_config["n_critic"] == 0:
+                    utils.freeze(self.discriminator)
+                    utils.unfreeze(self.generator)
+                    z = torch.randn(bs, self.model_config["z_dim"]).cuda()
+                    f_imgs = self.generator(z)
+                    logit_dg = self.discriminator(f_imgs)
+
+                    # calculate loss
+                    g_loss = -logit_dg.mean()
+
+                    self.optim_gen.zero_grad()
+                    g_loss.backward()
+                    self.optim_gen.step()
+
+            end = time.time()
+            interval = end - start
+
+            print(f"Epoch:{epoch} \t Time:{interval} \t Generator loss: {g_loss}")
+            if (epoch + 1) % 5 == 0:
+                z = torch.randn(32, self.model_config["z_dim"]).cuda()
+                fake_image = self.generator(z)
+                utils.save_tensor_image(
+                    fake_image.detach(),
+                    os.path.join(self.RESULT_PATH, f"result_image_{epoch}.png"),
+                    nrow=8,
+                )
+                torch.save(
+                    {"state_dict": self.generator.state_dict()},
+                    os.path.join(
+                        self.MODEL_PATH,
+                        f"ckpts/Generator{self.dataset_config['name']}_epoch{epoch}.tar",
+                    ),
+                )
+                grid = torchvision.utils.make_grid(fake_image.detach())
+                self.writer.add_image(f"images_epoch_{epoch}", grid, 0)
+
+            self.writer.add_scalar(
+                "generator/train/lr", self.model_config["lr"], global_step=epoch
+            )
+            self.writer.add_scalar("generator/train/loss", g_loss, global_step=epoch)
+
+        torch.save(
+            {"state_dict": self.generator.state_dict()},
+            os.path.join(
+                self.MODEL_PATH,
+                f"Generator{self.dataset_config['name']}.tar",
+            ),
+        )
+
+        torch.save(
+            {"state_dict": self.discriminator.state_dict()},
+            os.path.join(
+                self.MODEL_PATH,
+                f"Discriminator{self.dataset_config['name']}.tar",
+            ),
+        )
+
+    def train_gan(self):
+        print("Training-Process started!")
+        step = 0
+
+        for epoch in range(self.model_config["epochs"]):
+            start = time.time()
+            for i, imgs in enumerate(self.trainloader):
                 step += 1
                 imgs = imgs.cuda()
                 bs = imgs.size(0)
@@ -591,7 +691,10 @@ class Trainer:
             return VGG16(n_classes=self.dataset_config["num_classes"])
         elif model_type == "gan":
             # return Generator(self.model_config["z_dim"]), DGWGAN(3)
-            return Generator_MNIST(self.model_config["z_dim"]), DGWGAN_MNIST(1)
+            if self.dataset_config['name'] == "mnist":
+                return Generator_MNIST(self.model_config["z_dim"]), DGWGAN_MNIST(1)
+            else:
+                return Generator(self.model_config["z_dim"]), DGWGAN(3)
         elif model_type == "FaceNet":
             return FaceNet(num_classes=self.dataset_config["num_classes"])
         return None

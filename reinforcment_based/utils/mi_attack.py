@@ -64,13 +64,13 @@ def inversion_stylegan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_
         if mean_score >= best_score:
             best_score = mean_score
             best_images = torch.vstack(test_images)
-            os.makedirs("./result/images/{}".format(model_name), exist_ok=True)
-            os.makedirs("./result/models/{}".format(model_name), exist_ok=True)
-            save_image(best_images, "./result/images/{}/{}.png".format(model_name, label), nrow=10)
-            torch.save(agent.actor_local.state_dict(), "./result/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
+            os.makedirs("../attack_results/reinforcment_celebaStyle/images/{}".format(model_name), exist_ok=True)
+            os.makedirs("../attack_results/reinforcment_celebaStyle/models/{}".format(model_name), exist_ok=True)
+            save_image(best_images, "../attack_results/reinforcment_celebaStyle/images/{}/{}.png".format(model_name, label), nrow=10)
+            torch.save(agent.actor_local.state_dict(), "../attack_results/reinforcment_celebaStyle/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
         if i_episode % 10000 == 0 or i_episode == max_episodes:
             print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes,best_score))
-            save_image(best_images, "./result/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
+            save_image(best_images, "../attack_results/reinforcment_celebaStyle/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
 
     return best_images
 
@@ -94,11 +94,9 @@ def inversion_dcgan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_ste
             next_state = deepcopy(z.cpu().numpy())
             state_image = G(z).detach()
             state_image = F.interpolate(state_image, size=(64, 64), mode='bilinear', align_corners=False)
-            print(state_image.shape)
             # print(state_image.shape)
             action_image = G(action.clone().detach().reshape((1, len(action))).cuda()).detach()
             action_image = F.interpolate(action_image, size=(64, 64), mode='bilinear', align_corners=False)
-            print(action_image.shape)
             # Calculate the reward.
             _, state_output = T(state_image)
             _, action_output = T(action_image)
@@ -136,13 +134,13 @@ def inversion_dcgan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_ste
         if mean_score >= best_score:
             best_score = mean_score
             best_images = torch.vstack(test_images)
-            os.makedirs("./result/images/{}".format(model_name), exist_ok=True)
-            os.makedirs("./result/models/{}".format(model_name), exist_ok=True)
-            save_image(best_images, "./result/images/{}/{}.png".format(model_name, label), nrow=10)
-            torch.save(agent.actor_local.state_dict(), "./result/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
+            os.makedirs("./attack_results/reinforcment_celeba/images/{}".format(model_name), exist_ok=True)
+            os.makedirs("./attack_results/reinforcment_celeba/models/{}".format(model_name), exist_ok=True)
+            save_image(best_images, "./attack_results/reinforcment_celeba/images/{}/{}.png".format(model_name, label), nrow=10)
+            torch.save(agent.actor_local.state_dict(), "./attack_results/reinforcment_celeba/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
         if i_episode % 10000 == 0 or i_episode == max_episodes:
             print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes,best_score))
-            save_image(best_images, "./result/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
+            save_image(best_images, "./attack_results/reinforcment_celeba/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
 
     return best_images
 
@@ -217,12 +215,12 @@ def inversion_MNIST_I(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_s
         if mean_score >= best_score:
             best_score = mean_score
             best_images = torch.vstack(test_images)
-            os.makedirs("./result/images/{}".format(model_name), exist_ok=True)
-            os.makedirs("./result/models/{}".format(model_name), exist_ok=True)
-            save_image(best_images, "./result/images/{}/{}.png".format(model_name, label), nrow=10)
-            torch.save(agent.actor_local.state_dict(), "./result/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
+            os.makedirs("./attack_results/reinforcment_mnist/images/{}".format(model_name), exist_ok=True)
+            os.makedirs("./attack_results/reinforcment_mnist/models/{}".format(model_name), exist_ok=True)
+            save_image(best_images, "./attack_results/reinforcment_mnist/images/{}/{}.png".format(model_name, label), nrow=10)
+            torch.save(agent.actor_local.state_dict(), "./attack_results/reinforcment_mnist/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
         if i_episode % 10000 == 0 or i_episode == max_episodes:
             print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes,best_score))
-            save_image(best_images, "./result/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
+            save_image(best_images, "./attack_results/reinforcment_mnist/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
 
     return best_images
