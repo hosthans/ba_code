@@ -33,7 +33,7 @@ def inversion_stylegan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_
             score1 = float(torch.mean(torch.diag(torch.index_select(torch.log(F.softmax(state_output, dim=-1)).data, 1, y))))
             score2 = float(torch.mean(torch.diag(torch.index_select(torch.log(F.softmax(action_output, dim=-1)).data, 1, y))))
             score3 = math.log(max(1e-7, float(torch.index_select(F.softmax(state_output, dim=-1).data, 1, y)) - float(torch.max(torch.cat((F.softmax(state_output, dim=-1)[0,:y],F.softmax(state_output, dim=-1)[0,y+1:])), dim=-1)[0])))
-            reward = 2 * score1 + 2 * score2 + 4 * score3
+            reward = 2 * score1 + 2 * score2 + 8 * score3
 
             # Update policy.
             if t == max_step - 1 :
