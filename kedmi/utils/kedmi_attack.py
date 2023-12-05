@@ -69,6 +69,7 @@ def get_act_reg_mnist(train_loader, T, device, Nsample=5000):
             if batch_idx*len(data) > Nsample:
                 break
             data  = data.to(device)
+            print(data.shape)
             fea,_ = T(data)
             if batch_idx == 0:
                 all_fea = fea
@@ -88,6 +89,7 @@ def get_act_reg(train_loader,T,device,Nsample=5000):
             if batch_idx*len(data) > Nsample:
                 break
             data  = data.to(device)
+            print(data.shape)
             fea,_ = T(data)
             if batch_idx == 0:
                 all_fea = fea

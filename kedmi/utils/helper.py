@@ -146,7 +146,9 @@ def get_model(attack_name, classes):
 
 def get_augmodel(model_name, nclass, path_T=None, dataset='celeba'):
     if model_name=="VGG16":
-        model = VGG16(nclass)   
+        model = VGG16(nclass)
+    elif model_name == "VGG16dp":
+        model = VGG16(nclass)
     elif model_name=="FaceNet":
         model = FaceNet(nclass)
     elif model_name=="FaceNet64":
@@ -162,9 +164,12 @@ def get_augmodel(model_name, nclass, path_T=None, dataset='celeba'):
 
     model = torch.nn.DataParallel(model).cuda()
     if path_T is not None: 
-        
-        ckp_T = torch.load(path_T)        
-        model.load_state_dict(ckp_T['state_dict'], strict=True)
+        if model_name == "VGG16dp":
+            ckp_T = torch.load(path_T)        
+            model.load_state_dict(ckp_T['state_dict'], strict=False)
+        else:        
+            ckp_T = torch.load(path_T)        
+            model.load_state_dict(ckp_T['state_dict'], strict=True)
     return model
 
 
@@ -309,11 +314,11 @@ def get_attack_model(args_json, eval_mode=False):
                         download=True,
                         transform=transforms.Compose(
                             [
-                                # transforms.Grayscale(num_output_channels=3),
+                                transforms.Grayscale(num_output_channels=3),
                                 transforms.Resize((64, 64)),
                                 transforms.ToTensor(),
-                                transforms.Normalize(mean=[0.5], std=[0.5]),
-                                # transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                                # transforms.Normalize(mean=[0.5], std=[0.5]),
+                                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
                             ]
                         ),
                     )
