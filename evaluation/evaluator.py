@@ -62,7 +62,7 @@ class Plot:
         plt.title(plot_title)
 
         ## new
-        x_ticks = np.arange(np.floor(graphs[0[1]].min()), np.ceil(graph[0][1].max()) + 1, 2)
+        x_ticks = np.arange(np.floor(graphs[0][1].min()), np.ceil(graphs[0][1].max()) + 1, 2)
         plt.xticks(x_ticks)
         ##
 
