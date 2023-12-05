@@ -182,16 +182,16 @@ class Trainer:
 
     def train(self):
         if self.mode == "nn":
-            loss, acc, acc_t = self.train_nn()
-            return loss, acc, acc_t
+            loss, acc, loss_t, acc_t = self.train_nn()
+            return loss, acc, loss_t, acc_t
         elif self.mode == "gan":
             if self.dataset_config['name'] == "mnist":
                 self.train_gan_mnist()
             else:
                 self.train_gan()
         elif self.mode == "dpnn":
-            loss, acc, acc_t, eps = self.train_dp()
-            return loss, acc, acc_t, eps
+            loss, acc, loss_t, acc_t, eps = self.train_dp()
+            return loss, acc, loss_t, acc_t, eps
         else:
             print(f"train mode for {self.mode} not implemented yet")
 
@@ -219,6 +219,7 @@ class Trainer:
         train_acc_list = []
         train_loss_list = []
         test_acc_list = []
+        test_loss_list = []
         epsilon_list = []
         epochs = np.arange(1, self.model_config["epochs"]+1)
 
@@ -252,12 +253,13 @@ class Trainer:
                     cnt += bs
                     
                 train_loss, train_acc = loss_tot * 1.0 / cnt, ACC * 100.0 / cnt
-                test_acc = self.test()
+                test_loss, test_acc = self.test()
 
                 epsilon = self.privacy_engine.accountant.get_epsilon(delta=1e-5)
 
                 train_acc_list.append(train_acc)
                 train_loss_list.append(train_loss)
+                test_loss_list.append(test_loss)
                 test_acc_list.append(test_acc)
                 epsilon_list.append(epsilon)
 
@@ -285,6 +287,7 @@ class Trainer:
         
         train_loss_summary = ["VGG16-DP - loss", epochs, train_loss_list]
         train_acc_summary = ["VGG16-DP - accuracy", epochs, train_acc_list]
+        test_loss_summary = ["VGG16 - loss (test)", epochs, test_loss_list]
         test_acc_summary = ["VGG16-DP - accuracy (test)", epochs, test_acc_list]
         epsilon_summary = ["DP-Epsilons", epochs, epsilon_list]
 
@@ -295,7 +298,7 @@ class Trainer:
             ),
         )
 
-        return train_loss_summary, train_acc_summary, test_acc_summary, epsilon_summary
+        return train_loss_summary, train_acc_summary, test_loss_summary, test_acc_summary, epsilon_summary
 
     def train_nn(self):
         print("Training-Process started!")
@@ -303,6 +306,7 @@ class Trainer:
         train_acc_list = []
         train_loss_list = []
         test_acc_list = []
+        test_loss_list = []
         epochs = np.arange(1, self.model_config["epochs"]+1)
 
         for epoch in range(self.model_config["epochs"]):
@@ -342,8 +346,9 @@ class Trainer:
             # self.writer.add_scalar("train/loss", loss.item(), global_step=epoch)
             # self.writer.add_scalar("train/confidence", train_acc, global_step=epoch)
 
-            test_acc = self.test()
+            test_loss, test_acc = self.test()
             test_acc_list.append(test_acc)
+            test_loss_list.append(test_loss)
 
             # self.writer.add_scalar("test/confidence", test_acc, global_step=epoch)
 
@@ -364,6 +369,7 @@ class Trainer:
             )
         
         train_loss_summary = ["VGG16 - loss", epochs, train_loss_list]
+        test_loss_summary = ["VGG16 - loss (test)", epochs, test_loss_list]
         train_acc_summary = ["VGG16 - accuracy", epochs, train_acc_list]
         test_acc_summary = ["VGG16 - accuracy (test)", epochs, test_acc_list]
 
@@ -374,7 +380,7 @@ class Trainer:
             ),
         )
 
-        return train_loss_summary, train_acc_summary, test_acc_summary
+        return train_loss_summary, train_acc_summary, test_loss_summary, test_acc_summary
 
     def test(self):
         self.model.eval()
@@ -390,7 +396,13 @@ class Trainer:
             ACC += torch.sum(iden == out_iden).item()
             cnt += bs
 
-        return ACC * 100.0 / cnt
+            # calculate loss
+            batch_loss = F.cross_entropy(out_prob, iden, reduction='sum')
+            loss += batch_loss.item()
+
+        avg_loss = loss/cnt
+
+        return avg_loss, ACC * 100.0 / cnt
 
     def train_gan_mnist(self):
         print("Training-Process started!")

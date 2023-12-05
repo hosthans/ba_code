@@ -61,6 +61,11 @@ class Plot:
         plt.grid(False)
         plt.title(plot_title)
 
+        ## new
+        x_ticks = np.arange(np.floor(graphs[0[1]].min()), np.ceil(graph[0][1].max()) + 1, 2)
+        plt.xticks(x_ticks)
+        ##
+
         if save_path is not None:
             plt.savefig(save_path, format='png')
 
