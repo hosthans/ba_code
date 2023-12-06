@@ -45,9 +45,6 @@ class Trainer:
         # initialize summary_writer for tensorboard
         self.writer = SummaryWriter(f"torchlogs/{mode}_{dataset}")
 
-        # initialize plotter for plots
-        self.plotter = Plot()
-
         # load dataset configuration
         self.data_config = utils.load_json(os.path.join(CONFIG_PATH, "data.json"))
         self.dataset_config = self.data_config[dataset]
