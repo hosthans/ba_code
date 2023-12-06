@@ -314,11 +314,16 @@ def get_attack_model(args_json, eval_mode=False):
                         download=True,
                         transform=transforms.Compose(
                             [
+                                # dp 
                                 transforms.Grayscale(num_output_channels=3),
                                 transforms.Resize((64, 64)),
                                 transforms.ToTensor(),
-                                # transforms.Normalize(mean=[0.5], std=[0.5]),
                                 transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+
+                                # normal
+                                # transforms.Resize((64, 64)),
+                                # transforms.ToTensor(),
+                                # transforms.Normalize(mean=[0.5], std=[0.5]),
                             ]
                         ),
                     )
