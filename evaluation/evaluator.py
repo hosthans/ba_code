@@ -38,7 +38,7 @@ class Plot:
     def __init__(self) -> None:
         pass
 
-    def sciencePlot(self, save_path: str = None, legend: bool = True, plot_title: str = "Titel", x_label: str = "X", y_label: str = "Y", graphs: list = None, inset_xlim: list = None, inset_ylim:list = None):
+    def sciencePlot(self, save_path: str = None, legend: bool = True, plot_title: str = "Titel", x_label: str = "X", y_label: str = "Y", graphs: list = None, x_limit: list = None, y_limit: list = None):
         """
         The list of graphs contains each information of its graphs.
 
@@ -57,30 +57,26 @@ class Plot:
 
         for graph in graphs: 
             plt.plot(graph[1], graph[2], label=graph[0])
-        plt.xlabel(x_label)
-        plt.ylabel(y_label)
+        plt.xlabel(x_label, fontsize=5)
+        plt.ylabel(y_label, fontsize=5)
+        plt.tick_params(axis='both', labelsize=4)
         if legend == True:
             plt.legend()
+            plt.legend(fontsize=5)
+
         plt.grid(False)
-        plt.title(plot_title)
+        plt.title(plot_title, fontsize=8)
 
         # Set x ticks
         x_ticks = np.arange(np.floor(np.array(graphs[0][1]).min()), np.ceil(np.array(graphs[0][1]).max()) + 1, 2)
         plt.xticks(x_ticks)
 
-        # Add inset plot
-        if inset_xlim is not None and inset_ylim is not None:
-            axins = inset_axes(ax, width='65%', height='30%', loc='right')
-            axins.set_xlim(inset_xlim[0], inset_xlim[1])
-            axins.set_ylim(inset_ylim[0], inset_ylim[1])
-            axins.tick_params(axis='both', which='both', labelsize=4)
+        if y_limit is not None:
+            plt.ylim(y_limit[0], y_limit[1])
 
-            for graph in graphs:
-                axins.plot(graph[1], graph[2], label=graph[0])
-
-            # axins.set_xlabel('X-Achse')
-            # axins.set_ylabel('Y-Achse')
-            axins.set_title('vergrößerte Teilansicht', fontsize=4)
+        # Set x-axis limit if specified
+        if x_limit is not None:
+            plt.xlim(x_limit[0], x_limit[1])
 
         if save_path is not None:
             plt.savefig(save_path, format='png')
