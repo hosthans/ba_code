@@ -69,7 +69,7 @@ def get_act_reg_mnist(train_loader, T, device, Nsample=5000):
             if batch_idx*len(data) > Nsample:
                 break
             data  = data.to(device)
-            print(data.shape)
+            # print(data.shape)
             fea,_ = T(data)
             if batch_idx == 0:
                 all_fea = fea
@@ -89,7 +89,7 @@ def get_act_reg(train_loader,T,device,Nsample=5000):
             if batch_idx*len(data) > Nsample:
                 break
             data  = data.to(device)
-            print(data.shape)
+            # print(data.shape)
             fea,_ = T(data)
             if batch_idx == 0:
                 all_fea = fea
@@ -194,7 +194,10 @@ def dist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
                     if clipz==True:
                         z =  torch.clamp(z,-clip_range, clip_range).float()
                     fake_img = G(z.detach())
-                    eval_prob = E(low2high(fake_img))[-1]
+                    print(fake_img.shape)
+                    # eval_prob = E(low2high(fake_img))[-1]
+                    eval_prob = E(fake_img)[-1]
+                    print(eval_prob)
                     
                     eval_iden = torch.argmax(eval_prob, dim=1).view(-1)
                     acc = iden.eq(eval_iden.long()).sum().item() * 100.0 / bs
@@ -271,8 +274,10 @@ def mnist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
                     if clipz==True:
                         z =  torch.clamp(z,-clip_range, clip_range).float()
                     fake_img = G(z.detach())
-                    fake_img_l2h = low2highMNIST(fake_img)
-                    eval_prob = E(fake_img_l2h)[-1]
+                    # fake_img_l2h = low2highMNIST(fake_img)
+                    print(fake_img.shape)
+                    img_rgb = fake_img.repeat(1, 3, 1, 1)
+                    eval_prob = E(img_rgb)[-1]
                     
                     eval_iden = torch.argmax(eval_prob, dim=1).view(-1)
                     acc = iden.eq(eval_iden.long()).sum().item() * 100.0 / bs

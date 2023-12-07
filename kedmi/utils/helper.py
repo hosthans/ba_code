@@ -120,6 +120,7 @@ def low2high(img):
     proc = get_deprocessor()
     img_tensor = img.detach().cpu().float()
     img = torch.zeros(bs, 3, 112, 112)
+    # img = torch.zeros(bs, 3, 64, 64)
     for i in range(bs):
         img_i = transforms.ToPILImage()(img_tensor[i, :, :, :]).convert('RGB')
         img_i = proc(img_i)
@@ -215,7 +216,7 @@ def gradient_penalty(x, y, DG):
     return gp
 
 def log_sum_exp(x, axis = 1):
-    print(x.shape)
+    # print(x.shape)
     m = torch.max(x, dim = 1)[0]
     return m + torch.log(torch.sum(torch.exp(x - m.unsqueeze(1)), dim = axis))
 
