@@ -22,7 +22,7 @@
     "attack":{
         "method": "kedmi",
         "variant": "L_logit",
-        "iters_mi": 6000,
+        "iters_mi": 2000,
         "lr": 0.02,
         "lam": 1.0,
         "same_z":"",

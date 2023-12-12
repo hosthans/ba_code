@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from kedmi.utils.helper import log_sum_exp, save_tensor_images, low2high, low2highMNIST
 from torch.autograd import Variable
 import torch.optim as optim
-
+import time
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -153,7 +153,9 @@ def dist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
         outputs_label = "{}_iter_{}_{}_label".format(prefix, random_seed, 0)
         np.save(outputs_z,{"mu":mu.detach().cpu().numpy(),"log_var":log_var.detach().cpu().numpy()})
         np.save(outputs_label,iden.detach().cpu().numpy())
-            
+        
+        start = time.time()
+
         for i in range(iter_times):
             z = reparameterize(mu, log_var)
             if clipz==True:
@@ -194,16 +196,19 @@ def dist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
                     if clipz==True:
                         z =  torch.clamp(z,-clip_range, clip_range).float()
                     fake_img = G(z.detach())
-                    print(fake_img.shape)
+                    # print(fake_img.shape)
                     # eval_prob = E(low2high(fake_img))[-1]
                     eval_prob = E(fake_img)[-1]
-                    print(eval_prob)
+                    # print(eval_prob)
                     
                     eval_iden = torch.argmax(eval_prob, dim=1).view(-1)
                     acc = iden.eq(eval_iden.long()).sum().item() * 100.0 / bs
                     save_tensor_images(fake_img, save_img_dir + '{}.png'.format(i+1))
                     print("Iteration:{}\tPrior Loss:{:.2f}\tIden Loss:{:.2f}\tAttack Acc:{:.2f}".format(i+1, Prior_Loss_val, Iden_Loss_val, acc))
                     
+        end = time.time()
+        total_time = end - start
+        print(f"Gesamtzeit für {iter_times} Iterationen: {total_time:.2f} Sekunden")
                         
         outputs_z = "{}_iter_{}_{}_dis".format(prefix, random_seed, iter_times)
         outputs_label = "{}_iter_{}_{}_label".format(prefix, random_seed, iter_times)
@@ -236,7 +241,9 @@ def mnist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
         outputs_label = "{}_iter_{}_{}_label".format(prefix, random_seed, 0)
         np.save(outputs_z,{"mu":mu.detach().cpu().numpy(),"log_var":log_var.detach().cpu().numpy()})
         np.save(outputs_label,iden.detach().cpu().numpy())
-            
+        
+        start = time.time()
+
         for i in range(iter_times):
             z = reparameterize(mu, log_var)
             if clipz==True:
@@ -275,7 +282,7 @@ def mnist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
                         z =  torch.clamp(z,-clip_range, clip_range).float()
                     fake_img = G(z.detach())
                     # fake_img_l2h = low2highMNIST(fake_img)
-                    print(fake_img.shape)
+                    # print(fake_img.shape)
                     img_rgb = fake_img.repeat(1, 3, 1, 1)
                     eval_prob = E(img_rgb)[-1]
                     
@@ -283,7 +290,10 @@ def mnist_inversion(G, D, T, E, iden, lr=2e-2, momentum=0.9, lamda=100, \
                     acc = iden.eq(eval_iden.long()).sum().item() * 100.0 / bs
                     save_tensor_images(fake_img, save_img_dir + '{}.png'.format(i+1))
                     print("Iteration:{}\tPrior Loss:{:.2f}\tIden Loss:{:.2f}\tAttack Acc:{:.2f}".format(i+1, Prior_Loss_val, Iden_Loss_val, acc))
-                    
+
+        end = time.time()
+        total_time = end - start
+        print(f"Gesamtzeit für {iter_times} Iterationen: {total_time:.2f} Sekunden")       
                         
         outputs_z = "{}_iter_{}_{}_dis".format(prefix, random_seed, iter_times)
         outputs_label = "{}_iter_{}_{}_label".format(prefix, random_seed, iter_times)

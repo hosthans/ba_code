@@ -14,9 +14,9 @@
 
     "VGG16": {
         "name": "VGG16",
-        "epochs": 15,
+        "epochs": 5,
         "lr": 1e-3,
-        "batch_size": 32,
+        "batch_size": 16,
         "shuffle": true,
         "momentum": 0.9,
         "weight_decay": 1e-4

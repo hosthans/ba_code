@@ -4,7 +4,8 @@ import torch
 import torch.nn.functional as F
 from torchvision.utils import save_image
 from copy import deepcopy
-    
+import time
+
 def inversion_stylegan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_step=1, label=0, model_name="VGG16"):
     print("Target Label : " + str(label))
     best_score = 0
@@ -81,6 +82,7 @@ def inversion_dcgan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_ste
     c = None
 
     for i_episode in range(1, max_episodes + 1):
+
         y = torch.tensor([label]).cuda()
 
         # Initialize the state at the beginning of each episode.
@@ -139,7 +141,7 @@ def inversion_dcgan(agent, G, T, alpha, z_dim = 100, max_episodes=40000, max_ste
             save_image(best_images, "./attack_results/reinforcment_celeba/images/{}/{}.png".format(model_name, label), nrow=10)
             torch.save(agent.actor_local.state_dict(), "./attack_results/reinforcment_celeba/models/{}/actor_{}_{}.pt".format(model_name, label, alpha))
         if i_episode % 10000 == 0 or i_episode == max_episodes:
-            print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes,best_score))
+            print('Episodes {}/{}, Confidence score for the target model : {:.4f}'.format(i_episode, max_episodes, best_score))
             save_image(best_images, "./attack_results/reinforcment_celeba/images/{}/final_image_{}_{}.png".format(model_name, i_episode, label), nrow=10)
 
     return best_images
