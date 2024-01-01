@@ -1,5 +1,6 @@
 import torch.nn as nn
 import torchvision.models
+from torchvision.models.vgg import VGG16_BN_Weights
 import torch.nn.functional as F
 
 class Flatten(nn.Module):
@@ -9,7 +10,7 @@ class Flatten(nn.Module):
 class VGG16(nn.Module):
     def __init__(self, n_classes):
         super(VGG16, self).__init__()
-        model=torchvision.models.vgg16_bn(pretrained=False)
+        model=torchvision.models.vgg16_bn(weights=VGG16_BN_Weights.IMAGENET1K_V1)
         self.feature = model.features
         self.feat_dim = 512 * 2 * 2
         self.n_classes = n_classes

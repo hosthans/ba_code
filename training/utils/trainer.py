@@ -698,6 +698,9 @@ class Trainer:
         if model_type == "VGG16":
             # return VGG16WithoutBatchNorm(num_classes=self.dataset_config['num_classes'])
             return VGG16(n_classes=self.dataset_config["num_classes"])
+        elif model_type == "VGG16_celeba":
+            # return VGG16WithoutBatchNorm(num_classes=self.dataset_config['num_classes'])
+            return VGG16(n_classes=self.dataset_config["num_classes"])
         elif model_type == "gan":
             # return Generator(self.model_config["z_dim"]), DGWGAN(3)
             if self.dataset_config['name'] == "mnist":
