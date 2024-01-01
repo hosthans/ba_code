@@ -14,7 +14,7 @@
 
     "VGG16": {
         "name": "VGG16",
-        "epochs": 8,
+        "epochs": 15,
         "lr": 1e-3,
         "batch_size": 64,
         "shuffle": true,
@@ -24,7 +24,7 @@
 
     "VGG16_celeba": {
         "name": "VGG16",
-        "epochs": 200,
+        "epochs": 100,
         "lr": 0.0005,
         "batch_size": 256,
         "shuffle": true,
