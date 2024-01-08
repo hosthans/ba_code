@@ -120,18 +120,18 @@ class Trainer:
             del self.train_set
 
             # # Generator variables
-            # self.generator, self.discriminator = self.load_model(model_type=model_type)
-            # self.generator = torch.nn.DataParallel(self.generator).cuda()
-            # self.discriminator = torch.nn.DataParallel(self.discriminator).cuda()
-            self.generator = Generator(self.model_config['z_dim'])
-            path_G = "checkpoints/gan/Generatorceleba.tar"
+            self.generator, self.discriminator = self.load_model(model_type=model_type)
             self.generator = torch.nn.DataParallel(self.generator).cuda()
-            self.generator.load_state_dict(torch.load(path_G)['state_dict'], strict=False)
-
-            self.discriminator = DGWGAN(3)
-            path_D = "checkpoints/gan/Discriminatorceleba.tar"
             self.discriminator = torch.nn.DataParallel(self.discriminator).cuda()
-            self.discriminator.load_state_dict(torch.load(path_D)['state_dict'], strict=False)
+            # self.generator = Generator(self.model_config['z_dim'])
+            # path_G = "checkpoints/gan/Generatorceleba.tar"
+            # self.generator = torch.nn.DataParallel(self.generator).cuda()
+            # self.generator.load_state_dict(torch.load(path_G)['state_dict'], strict=False)
+
+            # self.discriminator = DGWGAN(3)
+            # path_D = "checkpoints/gan/Discriminatorceleba.tar"
+            # self.discriminator = torch.nn.DataParallel(self.discriminator).cuda()
+            # self.discriminator.load_state_dict(torch.load(path_D)['state_dict'], strict=False)
 
             # Optimizer
             self.optim_gen = torch.optim.Adam(
@@ -182,7 +182,7 @@ class Trainer:
             loss, acc, loss_t, acc_t = self.train_nn()
             return loss, acc, loss_t, acc_t
         elif self.mode == "gan":
-            if self.dataset_config['name'] == "mnist":
+            if self.dataset_config['name'] in ["mnist", "qmnist"]:
                 self.train_gan_mnist()
             else:
                 self.train_gan()
@@ -632,6 +632,51 @@ class Trainer:
                 ),
             )
             return train_set
+        
+        elif dataset == "qmnist" and gan == False:
+            train_set = datasets.QMNIST(
+                root="datasets/qmnist",
+                train=True,
+                download=True,
+                transform=transforms.Compose(
+                    [
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Resize((image_size, image_size)),
+                        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                    ]
+                ),
+            )
+
+            test_set = datasets.QMNIST(
+                root="datasets/qmnist",
+                train=False,
+                download=True,
+                transform=transforms.Compose(
+                    [
+                        transforms.Grayscale(num_output_channels=3),
+                        transforms.ToTensor(),
+                        transforms.Resize((image_size, image_size)),
+                        transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+                    ]
+                ),
+            )
+            return train_set, test_set
+
+        elif dataset == "qmnist" and gan == True:
+            train_set = datasets.QMNIST(
+                root="datasets/qmnist",
+                train=True,
+                download=True,
+                transform=transforms.Compose(
+                    [
+                        transforms.Resize((image_size, image_size)),
+                        transforms.ToTensor(),
+                        transforms.Normalize(mean=[0.5], std=[0.5]),
+                    ]
+                ),
+            )
+            return train_set
 
         elif dataset == "celeba" and gan == False:
             train_set = dl.ImageFolder(
@@ -703,7 +748,7 @@ class Trainer:
             return VGG16(n_classes=self.dataset_config["num_classes"])
         elif model_type == "gan":
             # return Generator(self.model_config["z_dim"]), DGWGAN(3)
-            if self.dataset_config['name'] == "mnist":
+            if self.dataset_config['name'] in ["mnist", "qmnist"]:
                 return Generator_MNIST(self.model_config["z_dim"]), DGWGAN_MNIST(1)
             else:
                 return Generator(self.model_config["z_dim"]), DGWGAN(3)

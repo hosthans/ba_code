@@ -237,6 +237,16 @@ def get_GAN(dataset, gan_type, gan_model_dir, n_classes, z_dim, target_model):
 
         print('path_G',path_G)
         print('path_D',path_D)
+    elif dataset == "qmnist":
+        print("Load MNIST_GAN")
+        G = Generator_MNIST(z_dim)
+        D = DGWGAN_MNIST(1)
+
+        path_G = os.path.join(gan_model_dir, "Generatorqmnist.tar")
+        path_D = os.path.join(gan_model_dir, "Discriminatorqmnist.tar")
+
+        print('path_G',path_G)
+        print('path_D',path_D)
     else: 
         G = Generator(z_dim)
         if gan_type == True:
@@ -333,11 +343,35 @@ def get_attack_model(args_json, eval_mode=False):
                         train_set, batch_size=64, shuffle=False, drop_last=True, pin_memory=True
                     )
                     _, dataloader_gan = train_set, trainloader
+                elif dataset == "qmnist":
+                    train_set = datasets.QMNIST(
+                        root="datasets/qmnist",
+                        train=True,
+                        download=True,
+                        transform=transforms.Compose(
+                            [
+                                # dp 
+                                transforms.Grayscale(num_output_channels=3),
+                                transforms.Resize((64, 64)),
+                                transforms.ToTensor(),
+                                transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
 
+                                # normal
+                                # transforms.Resize((64, 64)),
+                                # transforms.ToTensor(),
+                                # transforms.Normalize(mean=[0.5], std=[0.5]),
+                            ]
+                        ),
+                    )
+
+                    trainloader = data.DataLoader(
+                        train_set, batch_size=64, shuffle=False, drop_last=True, pin_memory=True
+                    )
+                    _, dataloader_gan = train_set, trainloader
                 else:
                     _, dataloader_gan = init_dataloader(args_json, args_json['dataset']['gan_file_path'], 50, mode="gan")
                 from kedmi.utils.kedmi_attack import get_act_reg, get_act_reg_mnist
-                if dataset == "mnist":
+                if dataset in ["mnist", "qmnist"]:
                     fea_mean_, fea_logvar_ = get_act_reg_mnist(dataloader_gan, model, device)
                 else:
                     fea_mean_,fea_logvar_ = get_act_reg(dataloader_gan,model,device)

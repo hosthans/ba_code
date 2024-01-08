@@ -8,6 +8,15 @@
         "local": false
     }, 
 
+    "qmnist": {
+        "name": "qmnist",
+        "model_name": "VGG16",
+        "gray": true,
+        "torch": true,
+        "num_classes": 10,
+        "local": false
+    }, 
+
     "celeba": {
         "name": "celeba",
         "indices": false,
