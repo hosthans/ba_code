@@ -1,0 +1,36 @@
+{
+    "root_path": "attack_results/",
+    "dataset":{
+        "model_name": "VGG16dp",
+        "name": "qmnist",
+        "n_classes":10,
+        "fid_real_path": "datasets/meta_celeba/celeba_target_300ids.npy",
+        "KNN_real_path": "datasets/meta_celeba/fea_target_300ids.npy",
+        "p_reg_path": "checkpoints/p_reg"
+    },
+
+    "train":{
+        "model_types": "VGG16dp,VGG16dp",
+        "cls_ckpts": "checkpoints/VGG16/dp_VGG16mnist.tar,checkpoints/VGG16/dp_VGG16mnist.tar",      
+        "num_seeds": 5,
+        "Nclass": 300,
+        "gan_model_dir": "checkpoints/gan",
+        "eval_model": "VGG16dp",
+        "eval_dir": "checkpoints/VGG16/dp_VGG16mnist.tar"
+        },
+
+    "attack":{
+        "method": "kedmi",
+        "variant": "L_logit",
+        "iters_mi": 2400,
+        "lr": 0.02,
+        "lam": 1.0,
+        "same_z":"",
+        "eval_metric": "fid, acc, knn",
+        "improved_flag": true,
+        "clipz": true,
+        "num_seeds": 1,
+        "loss": "logit_loss",
+        "classid": "0,1"
+        }
+}
