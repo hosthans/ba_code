@@ -35,6 +35,9 @@ class Trainer:
     """
 
     def __init__(self, dataset: str = "mnist", mode: str = "nn"):
+        """
+         
+        """
         """Initialize neceserray values
 
         Args:
@@ -50,6 +53,7 @@ class Trainer:
         self.dataset_config = self.data_config[dataset]
 
         # load model_type for specified dataset
+        # 
         if mode == "gan":
             model_type = "gan"
         else:
@@ -76,6 +80,7 @@ class Trainer:
         self.mode = mode
 
         print(self.dataset_config)
+        # 
         if mode == "nn":
             # dataset
             print("----------------Loading datasets-----------------")
@@ -178,10 +183,12 @@ class Trainer:
             assert False, "training method not implemented yet"
 
     def train(self):
+        # 
         if self.mode == "nn":
             loss, acc, loss_t, acc_t = self.train_nn()
             return loss, acc, loss_t, acc_t
         elif self.mode == "gan":
+            # 
             if self.dataset_config['name'] in ["mnist", "qmnist"]:
                 self.train_gan_mnist()
             else:
@@ -582,12 +589,25 @@ class Trainer:
         print(errors)
 
     def correct_module(self):
+        """
+         Fix and validate the module before running the test. This is a no - op if there is no model
+        """
         self.model = ModuleValidator.fix(self.model)
         self.validate_module()
         self.optimizer = self.load_optimizer()
 
     def get_dataset(self, dataset: str, image_size: int = 64, gan: bool = False):
+        """
+         Get dataset from MNIST. This is a wrapper for the data_config.
+         
+         @param dataset - Name of dataset to get.
+         @param image_size - Size of the image to use.
+         @param gan - Whether or not to use GAN.
+         
+         @return A : class : ` ~gensim. models. base. Dataset `
+        """
         dataset_config = self.data_config[dataset]
+        # Returns a set of datasets for the dataset.
         if dataset == "mnist" and gan == False:
             train_set = datasets.MNIST(
                 root="datasets/mnist",
@@ -706,6 +726,12 @@ class Trainer:
         print(dataset_config)
 
     def get_dataloader(self, dataset: data.Dataset, test_split_percentage: float):
+        """
+         Returns DataLoader to be used for training and testing. It is recommended to use this method if you have a lot of data in your dataset and don't want to load them all at once.
+         
+         @param dataset - Dataset to be used for training. This must be a : class : ` pyspark. data. Dataset `
+         @param test_split_percentage - Percentage
+        """
         # Berechne die Anzahl der Datensätze im Testset basierend auf dem Prozentsatz
         num_total_samples = len(dataset)
         num_test_samples = int(num_total_samples * test_split_percentage)
@@ -740,6 +766,14 @@ class Trainer:
         return train_loader, test_loader
 
     def load_model(self, model_type: str):
+        """
+         Load and return model of given type. This is used for training and testing
+         
+         @param model_type - Type of model to load
+         
+         @return Model of given type as defined in model_type
+        """
+        # Returns a generator for the model.
         if model_type == "VGG16":
             # return VGG16WithoutBatchNorm(num_classes=self.dataset_config['num_classes'])
             return VGG16(n_classes=self.dataset_config["num_classes"])
@@ -748,6 +782,7 @@ class Trainer:
             return VGG16(n_classes=self.dataset_config["num_classes"])
         elif model_type == "gan":
             # return Generator(self.model_config["z_dim"]), DGWGAN(3)
+            # Generator for the model.
             if self.dataset_config['name'] in ["mnist", "qmnist"]:
                 return Generator_MNIST(self.model_config["z_dim"]), DGWGAN_MNIST(1)
             else:
@@ -757,6 +792,12 @@ class Trainer:
         return None
 
     def load_optimizer(self):
+        """
+         Load and return the SGD optimizer. This is a wrapper around the PyTorch Optimizer which can be used to optimize the model by passing parameters and learning rates to the optimizer.
+         
+         
+         @return A PyTorch Optimizer for the model's
+        """
         return torch.optim.SGD(
             params=self.model.parameters(),
             lr=self.model_config["lr"],
